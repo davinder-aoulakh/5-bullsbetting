@@ -8,6 +8,7 @@ import Profile from './pages/Profile';
 import ResponsibleGambling from './pages/ResponsibleGambling';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Admin from './pages/Admin';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "ResponsibleGambling": ResponsibleGambling,
     "Terms": Terms,
     "Privacy": Privacy,
+    "Admin": Admin,
 }
 
 export const pagesConfig = {

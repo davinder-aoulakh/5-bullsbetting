@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { translations } from './translations';
 
 const LanguageContext = createContext();
 
@@ -31,7 +32,6 @@ export const LanguageProvider = ({ children }) => {
   };
 
   const t = (key) => {
-    const { translations } = require('./translations');
     return translations[language]?.[key] || translations['pt'][key] || key;
   };
 

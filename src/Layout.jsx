@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { useLanguage } from '@/components/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
 import { 
   Home, 
   Trophy, 
@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Layout({ children, currentPageName }) {
+function LayoutContent({ children, currentPageName }) {
   const { language, toggleLanguage, t } = useLanguage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -369,5 +369,15 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function Layout({ children, currentPageName }) {
+  return (
+    <LanguageProvider>
+      <LayoutContent currentPageName={currentPageName}>
+        {children}
+      </LayoutContent>
+    </LanguageProvider>
   );
 }

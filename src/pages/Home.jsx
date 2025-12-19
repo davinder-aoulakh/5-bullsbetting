@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/components/LanguageContext';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import {
 import { motion } from 'framer-motion';
 
 export default function Home() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -162,18 +164,17 @@ export default function Home() {
             >
               <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 px-4 py-1.5">
                 <Shield className="w-4 h-4 mr-1" />
-                Licenciado no Brasil
+                {t('home_licensed')}
               </Badge>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black">
-                <span className="text-white">Aposte com</span>
+                <span className="text-white">{t('home_hero_title')}</span>
                 <br />
-                <span className="gold-text">Segurança e Emoção</span>
+                <span className="gold-text">{t('home_hero_title_highlight')}</span>
               </h1>
               
               <p className="text-white/60 text-lg max-w-md">
-                A plataforma de apostas esportivas mais completa do Brasil. 
-                Cadastro rápido, pagamentos via PIX e as melhores odds do mercado.
+                {t('home_hero_description')}
               </p>
 
               <div className="flex flex-wrap gap-4">
@@ -181,13 +182,13 @@ export default function Home() {
                   <>
                     <Link to={createPageUrl('Onboarding')}>
                       <Button size="lg" className="gold-gradient text-black font-bold text-lg px-8 h-14 hover:opacity-90">
-                        Cadastrar Agora
+                        {t('home_signup_now')}
                         <ChevronRight className="w-5 h-5 ml-2" />
                       </Button>
                     </Link>
                     <Link to={createPageUrl('Sports')}>
                       <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-14 px-8">
-                        Ver Esportes
+                        {t('home_view_sports')}
                       </Button>
                     </Link>
                   </>
@@ -195,14 +196,14 @@ export default function Home() {
                   <>
                     <Link to={createPageUrl('Sports')}>
                       <Button size="lg" className="gold-gradient text-black font-bold text-lg px-8 h-14 hover:opacity-90">
-                        Apostar Agora
+                        {t('home_bet_now')}
                         <Trophy className="w-5 h-5 ml-2" />
                       </Button>
                     </Link>
                     <Link to={createPageUrl('LiveBetting')}>
                       <Button size="lg" variant="outline" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10 h-14 px-8">
                         <Zap className="w-5 h-5 mr-2" />
-                        Ao Vivo
+                        {t('home_live')}
                       </Button>
                     </Link>
                   </>
@@ -212,11 +213,11 @@ export default function Home() {
               <div className="flex items-center gap-8 pt-4">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                  <span className="text-white/80">4.9/5 Avaliação</span>
+                  <span className="text-white/80">4.9/5 {t('home_rating')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  <span className="text-white/80">+100k Usuários</span>
+                  <span className="text-white/80">+100k {t('home_users')}</span>
                 </div>
               </div>
             </motion.div>
@@ -234,7 +235,7 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
                         <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse mr-2" />
-                        AO VIVO
+                        {t('home_live').toUpperCase()}
                       </Badge>
                       <span className="text-white/50 text-sm">Brasileirão</span>
                     </div>
@@ -292,13 +293,13 @@ export default function Home() {
                   <Zap className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Ao Vivo</h2>
-                  <p className="text-white/50 text-sm">Apostas em tempo real</p>
+                  <h2 className="text-xl font-bold text-white">{t('home_live')}</h2>
+                  <p className="text-white/50 text-sm">{t('home_live_betting')}</p>
                 </div>
               </div>
               <Link to={createPageUrl('LiveBetting')}>
                 <Button variant="ghost" className="text-amber-400 hover:text-amber-300">
-                  Ver todos
+                  {t('home_view_all')}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
@@ -367,13 +368,13 @@ export default function Home() {
                 <Trophy className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Destaques</h2>
-                <p className="text-white/50 text-sm">Jogos mais apostados</p>
+                <h2 className="text-xl font-bold text-white">{t('home_featured')}</h2>
+                <p className="text-white/50 text-sm">{t('home_most_bet')}</p>
               </div>
             </div>
             <Link to={createPageUrl('Sports')}>
               <Button variant="ghost" className="text-amber-400 hover:text-amber-300">
-                Ver todos
+                {t('home_view_all')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
@@ -427,17 +428,17 @@ export default function Home() {
       {/* Sports Categories */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl font-bold text-white mb-6">Esportes</h2>
+          <h2 className="text-xl font-bold text-white mb-6">{t('home_sports_title')}</h2>
           
           <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
             {[
-              { name: 'Futebol', icon: '⚽', count: 234 },
-              { name: 'Basquete', icon: '🏀', count: 89 },
-              { name: 'Vôlei', icon: '🏐', count: 45 },
-              { name: 'MMA', icon: '🥊', count: 12 },
-              { name: 'Tênis', icon: '🎾', count: 67 },
-              { name: 'E-Sports', icon: '🎮', count: 156 },
-              { name: 'Mais', icon: '➕', count: null }
+              { name: t('sports_soccer'), icon: '⚽', count: 234 },
+              { name: t('sports_basketball'), icon: '🏀', count: 89 },
+              { name: t('sports_volleyball'), icon: '🏐', count: 45 },
+              { name: t('sports_mma'), icon: '🥊', count: 12 },
+              { name: t('sports_tennis'), icon: '🎾', count: 67 },
+              { name: t('sports_esports'), icon: '🎮', count: 156 },
+              { name: t('home_more'), icon: '➕', count: null }
             ].map((sport, i) => (
               <Link 
                 key={i} 
@@ -448,7 +449,7 @@ export default function Home() {
                   <span className="text-3xl block mb-2">{sport.icon}</span>
                   <p className="text-white font-medium text-sm">{sport.name}</p>
                   {sport.count && (
-                    <p className="text-white/40 text-xs">{sport.count} jogos</p>
+                    <p className="text-white/40 text-xs">{sport.count} {t('home_games')}</p>
                   )}
                 </Card>
               </Link>
@@ -462,10 +463,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Por que escolher a <span className="gold-text">5-BullsBetting</span>?
+              {t('home_why_title')} <span className="gold-text">5-BullsBetting</span>?
             </h2>
             <p className="text-white/60 max-w-xl mx-auto">
-              A melhor experiência em apostas esportivas do Brasil
+              {t('home_why_subtitle')}
             </p>
           </div>
 
@@ -473,23 +474,23 @@ export default function Home() {
             {[
               {
                 icon: Shield,
-                title: 'Segurança Total',
-                description: 'Verificação de identidade completa e proteção de dados conforme LGPD'
+                title: t('feature_security'),
+                description: t('feature_security_desc')
               },
               {
                 icon: Zap,
-                title: 'PIX Instantâneo',
-                description: 'Depósitos e saques via PIX processados em segundos'
+                title: t('feature_pix'),
+                description: t('feature_pix_desc')
               },
               {
                 icon: Smartphone,
-                title: 'Mobile First',
-                description: 'Experiência otimizada para dispositivos móveis'
+                title: t('feature_mobile'),
+                description: t('feature_mobile_desc')
               },
               {
                 icon: Headphones,
-                title: 'Suporte 24/7',
-                description: 'Atendimento em português disponível a qualquer momento'
+                title: t('feature_support'),
+                description: t('feature_support_desc')
               }
             ].map((feature, i) => (
               <motion.div
@@ -518,14 +519,14 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <Card className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/30 p-8 md:p-12 rounded-3xl text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Pronto para começar?
+                {t('home_ready_title')}
               </h2>
               <p className="text-white/70 text-lg mb-8 max-w-xl mx-auto">
-                Cadastre-se agora e faça sua primeira aposta em menos de 5 minutos!
+                {t('home_ready_desc')}
               </p>
               <Link to={createPageUrl('Onboarding')}>
                 <Button size="lg" className="gold-gradient text-black font-bold text-lg px-12 h-14 hover:opacity-90">
-                  Criar Conta Grátis
+                  {t('home_create_free')}
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>

@@ -31,7 +31,7 @@ export const LanguageProvider = ({ children }) => {
   };
 
   const t = (key) => {
-    const translations = require('../utils/translations').translations;
+    const { translations } = require('./translations');
     return translations[language]?.[key] || translations['pt'][key] || key;
   };
 

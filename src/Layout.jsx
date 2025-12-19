@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { 
   Home, 
   Trophy, 
@@ -12,7 +13,8 @@ import {
   LogOut,
   Zap,
   ChevronDown,
-  Shield
+  Shield,
+  Globe
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Layout({ children, currentPageName }) {
+  const { language, toggleLanguage, t } = useLanguage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,15 +70,15 @@ export default function Layout({ children, currentPageName }) {
   }
 
   const navItems = [
-    { name: 'Início', page: 'Home', icon: Home },
-    { name: 'Esportes', page: 'Sports', icon: Trophy },
-    { name: 'Ao Vivo', page: 'LiveBetting', icon: Zap },
+    { name: t('nav_home'), page: 'Home', icon: Home },
+    { name: t('nav_sports'), page: 'Sports', icon: Trophy },
+    { name: t('nav_live'), page: 'LiveBetting', icon: Zap },
   ];
 
   const userNavItems = [
-    { name: 'Carteira', page: 'Wallet', icon: Wallet },
-    { name: 'Minhas Apostas', page: 'MyBets', icon: Trophy },
-    { name: 'Perfil', page: 'Profile', icon: User },
+    { name: t('nav_wallet'), page: 'Wallet', icon: Wallet },
+    { name: t('nav_my_bets'), page: 'MyBets', icon: Trophy },
+    { name: t('nav_profile'), page: 'Profile', icon: User },
   ];
 
   return (
@@ -142,6 +145,18 @@ export default function Layout({ children, currentPageName }) {
 
             {/* User Section */}
             <div className="flex items-center gap-3">
+              {/* Language Switcher */}
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-white/70 hover:text-white"
+                title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+              >
+                <Globe className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline">
+                  {language === 'pt' ? 'EN' : 'PT'}
+                </span>
+              </button>
+
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
               ) : user ? (
@@ -160,7 +175,7 @@ export default function Layout({ children, currentPageName }) {
                   {/* Deposit Button */}
                   <Link to={createPageUrl('Wallet')}>
                     <Button className="gold-gradient text-black font-semibold hover:opacity-90 transition-opacity">
-                      Depositar
+                      {t('nav_deposit')}
                     </Button>
                   </Link>
 
@@ -198,7 +213,7 @@ export default function Layout({ children, currentPageName }) {
                         className="flex items-center gap-2 text-red-400 cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
-                        Sair
+                        {t('nav_logout')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -207,12 +222,12 @@ export default function Layout({ children, currentPageName }) {
                 <>
                   <Link to={createPageUrl('Onboarding')}>
                     <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5">
-                      Entrar
+                      {t('nav_login')}
                     </Button>
                   </Link>
                   <Link to={createPageUrl('Onboarding')}>
                     <Button className="gold-gradient text-black font-semibold hover:opacity-90">
-                      Cadastrar
+                      {t('nav_signup')}
                     </Button>
                   </Link>
                 </>
@@ -295,42 +310,42 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Esportes</h4>
+              <h4 className="font-semibold mb-4 text-white">{t('footer_sports')}</h4>
               <ul className="space-y-2 text-sm text-white/50">
-                <li><Link to={createPageUrl('Sports')} className="hover:text-white">Futebol</Link></li>
-                <li><Link to={createPageUrl('Sports')} className="hover:text-white">Basquete</Link></li>
-                <li><Link to={createPageUrl('Sports')} className="hover:text-white">Vôlei</Link></li>
-                <li><Link to={createPageUrl('Sports')} className="hover:text-white">MMA</Link></li>
+                <li><Link to={createPageUrl('Sports')} className="hover:text-white">{t('sports_soccer')}</Link></li>
+                <li><Link to={createPageUrl('Sports')} className="hover:text-white">{t('sports_basketball')}</Link></li>
+                <li><Link to={createPageUrl('Sports')} className="hover:text-white">{t('sports_volleyball')}</Link></li>
+                <li><Link to={createPageUrl('Sports')} className="hover:text-white">{t('sports_mma')}</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Conta</h4>
+              <h4 className="font-semibold mb-4 text-white">{t('footer_account')}</h4>
               <ul className="space-y-2 text-sm text-white/50">
-                <li><Link to={createPageUrl('Wallet')} className="hover:text-white">Depósitos</Link></li>
-                <li><Link to={createPageUrl('Wallet')} className="hover:text-white">Saques</Link></li>
-                <li><Link to={createPageUrl('MyBets')} className="hover:text-white">Minhas Apostas</Link></li>
+                <li><Link to={createPageUrl('Wallet')} className="hover:text-white">{t('footer_deposits')}</Link></li>
+                <li><Link to={createPageUrl('Wallet')} className="hover:text-white">{t('footer_withdrawals')}</Link></li>
+                <li><Link to={createPageUrl('MyBets')} className="hover:text-white">{t('nav_my_bets')}</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Suporte</h4>
+              <h4 className="font-semibold mb-4 text-white">{t('footer_support')}</h4>
               <ul className="space-y-2 text-sm text-white/50">
-                <li><Link to={createPageUrl('ResponsibleGambling')} className="hover:text-white">Jogo Responsável</Link></li>
-                <li><Link to={createPageUrl('Terms')} className="hover:text-white">Termos de Uso</Link></li>
-                <li><Link to={createPageUrl('Privacy')} className="hover:text-white">Privacidade</Link></li>
+                <li><Link to={createPageUrl('ResponsibleGambling')} className="hover:text-white">{t('footer_responsible_gambling')}</Link></li>
+                <li><Link to={createPageUrl('Terms')} className="hover:text-white">{t('footer_terms')}</Link></li>
+                <li><Link to={createPageUrl('Privacy')} className="hover:text-white">{t('footer_privacy')}</Link></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-white/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/40 text-sm">
-              © 2024 5-BullsBetting. Todos os direitos reservados.
+              © 2024 5-BullsBetting. {t('footer_rights')}.
             </p>
             <div className="flex items-center gap-4 text-white/40 text-xs">
-              <span>🔞 Proibido para menores de 18 anos</span>
+              <span>🔞 {t('footer_age_restriction')}</span>
               <span>•</span>
-              <span>Jogue com responsabilidade</span>
+              <span>{t('footer_play_responsibly')}</span>
             </div>
           </div>
         </div>
@@ -339,7 +354,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 md:hidden glass-card border-t border-white/5 safe-area-bottom">
         <div className="flex items-center justify-around py-2">
-          {[...navItems, { name: 'Carteira', page: 'Wallet', icon: Wallet }].map((item) => (
+          {[...navItems, { name: t('nav_wallet'), page: 'Wallet', icon: Wallet }].map((item) => (
             <Link
               key={item.page}
               to={createPageUrl(item.page)}

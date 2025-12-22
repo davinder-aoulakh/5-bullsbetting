@@ -24,8 +24,10 @@ import CPFInput from '@/components/onboarding/CPFInput';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
 import IDVerification from '@/components/onboarding/IDVerification';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function Onboarding() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -53,11 +55,11 @@ export default function Onboarding() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const steps = [
-    { label: 'CPF' },
-    { label: 'Conta' },
-    { label: 'Dados' },
-    { label: 'Termos' },
-    { label: 'Verificação' },
+    { label: t('onb_step_cpf') },
+    { label: t('onb_step_account') },
+    { label: t('onb_step_data') },
+    { label: t('onb_step_terms') },
+    { label: t('onb_step_verification') },
   ];
 
   // CPF validation
@@ -109,7 +111,7 @@ export default function Onboarding() {
             cpf: value
           });
         } else {
-          setCpfError('CPF inválido. Verifique os números digitados.');
+          setCpfError(t('onb_cpf_invalid'));
         }
         setCpfValidating(false);
       }, 1500);
@@ -174,7 +176,7 @@ export default function Onboarding() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       navigate(createPageUrl('Home'));
     } catch (err) {
-      setError('Erro ao finalizar cadastro. Tente novamente.');
+      setError(t('onb_error_complete'));
     }
     setLoading(false);
   };
@@ -239,10 +241,10 @@ export default function Onboarding() {
                 >
                   <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Bem-vindo à 5-BullsBetting
+                      {t('onb_welcome_title')}
                     </h2>
                     <p className="text-white/60">
-                      Comece informando seu CPF para criar sua conta
+                      {t('onb_welcome_subtitle')}
                     </p>
                   </div>
 
@@ -257,15 +259,15 @@ export default function Onboarding() {
                   <div className="grid grid-cols-3 gap-2 pt-4">
                     <div className="text-center p-3 rounded-lg bg-white/5">
                       <Shield className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">Seguro</span>
+                      <span className="text-xs text-white/60">{t('onb_secure')}</span>
                     </div>
                     <div className="text-center p-3 rounded-lg bg-white/5">
                       <Zap className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">Rápido</span>
+                      <span className="text-xs text-white/60">{t('onb_fast')}</span>
                     </div>
                     <div className="text-center p-3 rounded-lg bg-white/5">
                       <Trophy className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">Licenciado</span>
+                      <span className="text-xs text-white/60">{t('onb_licensed')}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -282,16 +284,16 @@ export default function Onboarding() {
                 >
                   <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Crie sua conta
+                      {t('onb_create_account')}
                     </h2>
                     <p className="text-white/60">
-                      Preencha seus dados de acesso
+                      {t('onb_fill_details')}
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white/80">E-mail</Label>
+                      <Label htmlFor="email" className="text-white/80">{t('onb_email')}</Label>
                       <Input
                         id="email"
                         type="email"
@@ -303,7 +305,7 @@ export default function Onboarding() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-white/80">Celular</Label>
+                      <Label htmlFor="phone" className="text-white/80">{t('onb_phone')}</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -316,14 +318,14 @@ export default function Onboarding() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-white/80">Senha</Label>
+                      <Label htmlFor="password" className="text-white/80">{t('onb_password')}</Label>
                       <div className="relative">
                         <Input
                           id="password"
                           type={showPassword ? "text" : "password"}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Mínimo 8 caracteres"
+                          placeholder={t('onb_password_placeholder')}
                           className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12"
                         />
                         <button
@@ -335,7 +337,7 @@ export default function Onboarding() {
                         </button>
                       </div>
                       {password && password.length < 8 && (
-                        <p className="text-amber-400 text-xs">A senha deve ter pelo menos 8 caracteres</p>
+                        <p className="text-amber-400 text-xs">{t('onb_password_hint')}</p>
                       )}
                     </div>
                   </div>
@@ -374,8 +376,8 @@ export default function Onboarding() {
                       <div className="flex items-center gap-3">
                         <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
                         <div>
-                          <p className="text-white font-medium">Verificando conformidade...</p>
-                          <p className="text-white/60 text-sm">Checando listas de exclusão e PEP</p>
+                          <p className="text-white font-medium">{t('onb_verifying_compliance')}</p>
+                          <p className="text-white/60 text-sm">{t('onb_checking_lists')}</p>
                         </div>
                       </div>
                     </div>
@@ -386,8 +388,8 @@ export default function Onboarding() {
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         <div>
-                          <p className="text-white font-medium">Verificação aprovada</p>
-                          <p className="text-white/60 text-sm">Você pode prosseguir com o cadastro</p>
+                          <p className="text-white font-medium">{t('onb_verification_approved')}</p>
+                          <p className="text-white/60 text-sm">{t('onb_can_proceed')}</p>
                         </div>
                       </div>
                     </div>
@@ -421,7 +423,7 @@ export default function Onboarding() {
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
+                {t('onb_back')}
               </Button>
 
               {currentStep < 5 ? (
@@ -434,7 +436,7 @@ export default function Onboarding() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <>
-                      Continuar
+                      {t('onb_continue')}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -449,7 +451,7 @@ export default function Onboarding() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <>
-                      Começar a Apostar
+                      {t('onb_start_betting')}
                       <Trophy className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -464,9 +466,9 @@ export default function Onboarding() {
 
           {/* Help */}
           <p className="text-center text-white/40 text-sm mt-6">
-            Precisa de ajuda?{' '}
+            {t('onb_need_help')}{' '}
             <button className="text-amber-400 hover:underline">
-              Fale conosco
+              {t('onb_contact_us')}
             </button>
           </p>
         </div>

@@ -76,11 +76,28 @@ Deno.serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const errorText = await response.text();
+      let errorDetails = errorText;
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson;
+        
+        // Check for insufficient balance error
+        if (errorJson.code === 9 || errorJson.message === 'NotEnoughBalance') {
+          return Response.json({ 
+            error: 'DataChecker account has insufficient balance. Please contact support to add credits.',
+            details: errorDetails
+          }, { status: 400 });
+        }
+      } catch (e) {
+        // If not JSON, use text as is
+      }
+      
       return Response.json({ 
         error: 'Failed to create verification link',
-        details: error
-      }, { status: response.status });
+        details: errorDetails
+      }, { status: 400 });
     }
 
     const data = await response.json();

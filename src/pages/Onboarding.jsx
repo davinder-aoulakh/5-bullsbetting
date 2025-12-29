@@ -162,9 +162,42 @@ export default function Onboarding() {
     setLoading(false);
   };
 
-  const handleIDVComplete = (result) => {
+  const handleIDVComplete = async (result) => {
     if (result.verified) {
-      setIdvCompleted(true);
+      setLoading(true);
+      try {
+        // Create account only after successful verification
+        await base44.auth.signUp({
+          email,
+          password,
+          full_name: userData.full_name,
+          cpf: userData.cpf,
+          phone: phone,
+          date_of_birth: userData.date_of_birth,
+          kyc_verified: true,
+          verification_date: new Date().toISOString()
+        });
+
+        // Login automatically after registration
+        await base44.auth.signIn({ email, password });
+        
+        // Store verification log
+        const user = await base44.auth.me();
+        await base44.entities.VerificationLog.create({
+          user_id: user.id,
+          verification_type: 'id_document',
+          provider: 'datachecker',
+          reference_id: result.transactionId,
+          status: 'passed',
+          result_details: result.result
+        });
+
+        setIdvCompleted(true);
+      } catch (err) {
+        setError(err.message || 'Failed to create account after verification');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

@@ -71,35 +71,7 @@ Deno.serve(async (req) => {
     const faceApproved = data.faceVerify?.result === 'APPROVED';
     const overallApproved = identityApproved && faceApproved;
 
-    // Update verification log
-    const logs = await base44.asServiceRole.entities.VerificationLog.filter({
-      user_id: user.id,
-      reference_id: data.transactionId
-    });
-
-    if (logs.length > 0) {
-      await base44.asServiceRole.entities.VerificationLog.update(logs[0].id, {
-        status: overallApproved ? 'passed' : 'failed',
-        result_details: {
-          identityResult: data.identity?.result,
-          faceResult: data.faceVerify?.result,
-          documentType: data.identity?.data?.documentType,
-          extractedData: {
-            name: data.identity?.data?.name?.fullname,
-            dateOfBirth: data.identity?.data?.dateOfBirth,
-            documentNumber: data.identity?.data?.documentNumber
-          }
-        }
-      });
-    }
-
-    // If approved, update user verification status
-    if (overallApproved) {
-      await base44.asServiceRole.entities.User.update(user.id, {
-        kyc_verified: true,
-        verification_date: new Date().toISOString()
-      });
-    }
+    // Note: Verification log will be created when user account is created after successful verification
 
     return Response.json({
       approved: overallApproved,

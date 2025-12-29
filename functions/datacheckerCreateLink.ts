@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     const accessToken = tokenData.accessToken;
 
     // Create secure ID link
-    const customerReference = `5bulls_${user.id}_${Date.now()}`;
+    const customerReference = `5bulls_${cpf.replace(/\D/g, '')}_${Date.now()}`;
     
     const response = await fetch(`${DATACHECKER_BASE_URL}/api/v2/secureidlink`, {
       method: 'POST',

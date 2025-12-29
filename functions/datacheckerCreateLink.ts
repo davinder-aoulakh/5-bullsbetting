@@ -95,18 +95,7 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
-    // Store verification log
-    await base44.asServiceRole.entities.VerificationLog.create({
-      user_id: user.id,
-      verification_type: 'id_document',
-      provider: 'datachecker',
-      reference_id: data.transactionId,
-      status: 'initiated',
-      result_details: {
-        customerReference: customerReference,
-        secureId: data.secureId
-      }
-    });
+    // Note: Verification log will be created after user account is created upon successful verification
 
     return Response.json({
       link: data.link,

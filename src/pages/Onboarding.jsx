@@ -171,9 +171,8 @@ export default function Onboarding() {
   const handleComplete = async () => {
     setLoading(true);
     try {
-      // In a real app, this would create the account
-      // For now, redirect to login
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Account was already created, just redirect to home
+      await new Promise(resolve => setTimeout(resolve, 500));
       navigate(createPageUrl('Home'));
     } catch (err) {
       setError(t('onb_error_complete'));

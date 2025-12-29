@@ -23,7 +23,7 @@ import StepIndicator from '@/components/onboarding/StepIndicator';
 import CPFInput from '@/components/onboarding/CPFInput';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
-import IDVerification from '@/components/onboarding/IDVerification';
+import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function Onboarding() {
@@ -405,10 +405,10 @@ export default function Onboarding() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <IDVerification
+                  <DataCheckerVerification
                     onComplete={handleIDVComplete}
                     isMobile={isMobile}
-                    userData={userData}
+                    userData={{ ...userData, email, phone }}
                   />
                 </motion.div>
               )}

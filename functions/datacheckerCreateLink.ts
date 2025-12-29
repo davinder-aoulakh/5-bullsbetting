@@ -1,0 +1,84 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, email, phone, cpf } = body;
+
+    // Get access token
+    const tokenResponse = await base44.functions.invoke('datacheckerAuth');
+    if (!tokenResponse.data?.accessToken) {
+      return Response.json({ 
+        error: 'Failed to get authentication token' 
+      }, { status: 500 });
+    }
+
+    const accessToken = tokenResponse.data.accessToken;
+
+    // Create secure ID link
+    const customerReference = `5bulls_${user.id}_${Date.now()}`;
+    
+    const response = await fetch(`${DATACHECKER_BASE_URL}/api/v2/secureidlink`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        product: 'IDV_PREMIUM',
+        name: name,
+        emailAddress: email,
+        phoneNumber: phone,
+        communicationModes: [],
+        disableCommunication: true,
+        languagePrefix: 'pt',
+        customerReference: customerReference,
+        enableOneTimePassword: false
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return Response.json({ 
+        error: 'Failed to create verification link',
+        details: error
+      }, { status: response.status });
+    }
+
+    const data = await response.json();
+
+    // Store verification log
+    await base44.asServiceRole.entities.VerificationLog.create({
+      user_id: user.id,
+      verification_type: 'id_document',
+      provider: 'datachecker',
+      reference_id: data.transactionId,
+      status: 'initiated',
+      result_details: {
+        customerReference: customerReference,
+        secureId: data.secureId
+      }
+    });
+
+    return Response.json({
+      link: data.link,
+      transactionId: data.transactionId,
+      qrCode: data.qrCode,
+      secureId: data.secureId
+    });
+
+  } catch (error) {
+    return Response.json({ 
+      error: error.message 
+    }, { status: 500 });
+  }
+});

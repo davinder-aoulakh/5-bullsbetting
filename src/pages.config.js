@@ -1,33 +1,33 @@
-import Onboarding from './pages/Onboarding';
+import Admin from './pages/Admin';
 import Home from './pages/Home';
-import Sports from './pages/Sports';
 import LiveBetting from './pages/LiveBetting';
-import Wallet from './pages/Wallet';
 import MyBets from './pages/MyBets';
+import Onboarding from './pages/Onboarding';
+import Privacy from './pages/Privacy';
 import Profile from './pages/Profile';
 import ResponsibleGambling from './pages/ResponsibleGambling';
+import Sports from './pages/Sports';
 import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import Admin from './pages/Admin';
+import Wallet from './pages/Wallet';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Onboarding": Onboarding,
+    "Admin": Admin,
     "Home": Home,
-    "Sports": Sports,
     "LiveBetting": LiveBetting,
-    "Wallet": Wallet,
     "MyBets": MyBets,
+    "Onboarding": Onboarding,
+    "Privacy": Privacy,
     "Profile": Profile,
     "ResponsibleGambling": ResponsibleGambling,
+    "Sports": Sports,
     "Terms": Terms,
-    "Privacy": Privacy,
-    "Admin": Admin,
+    "Wallet": Wallet,
 }
 
 export const pagesConfig = {
-    mainPage: "Home",
+    mainPage: "Onboarding",
     Pages: PAGES,
     Layout: __Layout,
 };

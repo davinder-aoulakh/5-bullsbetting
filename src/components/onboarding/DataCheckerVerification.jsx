@@ -41,7 +41,9 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       setTimeout(() => startPolling(response.data.transactionId), 3000);
 
     } catch (err) {
-      setError(err.message || 'Failed to initialize verification');
+      console.error('Verification initialization error:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to initialize verification';
+      setError(errorMessage);
       setStatus('error');
     }
   };

@@ -181,11 +181,40 @@ export default function Onboarding() {
     setLoading(false);
   };
 
+  const createAccount = async () => {
+    setLoading(true);
+    try {
+      // Register the user with Base44
+      await base44.auth.signUp({
+        email,
+        password,
+        full_name: userData.full_name,
+        cpf: userData.cpf,
+        phone: phone,
+        date_of_birth: userData.date_of_birth
+      });
+
+      // Login automatically after registration
+      await base44.auth.signIn({ email, password });
+      
+      return true;
+    } catch (err) {
+      setError(err.message || 'Failed to create account');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const nextStep = async () => {
     if (currentStep === 4 && !kycPassed) {
       await handleKYCCheck();
       if (kycPassed) {
-        setCurrentStep(prev => Math.min(prev + 1, 5));
+        // Create account and login before proceeding to verification
+        const accountCreated = await createAccount();
+        if (accountCreated) {
+          setCurrentStep(prev => Math.min(prev + 1, 5));
+        }
       }
     } else if (currentStep === 5 && idvCompleted) {
       await handleComplete();

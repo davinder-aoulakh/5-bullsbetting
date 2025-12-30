@@ -45,20 +45,20 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
         {showTerms && (
           <ScrollArea className="h-48 border-t border-white/10">
             <div className="p-4 text-white/70 text-sm space-y-2">
-              <p><strong className="text-white">1. Elegibilidade</strong></p>
-              <p>Você deve ter pelo menos 18 anos de idade e ser residente no Brasil para usar esta plataforma.</p>
+              <p><strong className="text-white">{t('terms_eligibility')}</strong></p>
+              <p>{t('terms_eligibility_text')}</p>
               
-              <p><strong className="text-white">2. Conta Única</strong></p>
-              <p>Cada usuário pode ter apenas uma conta ativa. Contas duplicadas serão encerradas.</p>
+              <p><strong className="text-white">{t('terms_unique_account')}</strong></p>
+              <p>{t('terms_unique_account_text')}</p>
               
-              <p><strong className="text-white">3. Verificação de Identidade</strong></p>
-              <p>Conforme a Portaria SPA/MF 722/2024, realizamos verificação de identidade através de documento oficial e reconhecimento facial.</p>
+              <p><strong className="text-white">{t('terms_identity_verification')}</strong></p>
+              <p>{t('terms_identity_verification_text')}</p>
               
-              <p><strong className="text-white">4. Jogo Responsável</strong></p>
-              <p>A 5-BullsBetting promove o jogo responsável. Disponibilizamos ferramentas de autoexclusão e limites de depósito.</p>
+              <p><strong className="text-white">{t('terms_responsible_gaming')}</strong></p>
+              <p>{t('terms_responsible_gaming_text')}</p>
               
-              <p><strong className="text-white">5. Métodos de Pagamento</strong></p>
-              <p>Aceitamos PIX, transferência bancária e boleto. Cartões de crédito não são aceitos conforme regulamentação.</p>
+              <p><strong className="text-white">{t('terms_payment_methods')}</strong></p>
+              <p>{t('terms_payment_methods_text')}</p>
             </div>
           </ScrollArea>
         )}

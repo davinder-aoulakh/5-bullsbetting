@@ -145,11 +145,18 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
   }
 
   if (status === 'error') {
+    // Improve error message display
+    const friendlyError = error.includes('429') 
+      ? t('verify_error_title') + '. Too many requests. Please wait a moment and try again.'
+      : error.includes('status code') 
+      ? t('verify_error_title') + '. Service temporarily unavailable. Please try again.'
+      : error;
+    
     return (
       <div className="text-center py-8">
         <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
         <p className="text-white font-medium mb-2">{t('verify_error_title')}</p>
-        <p className="text-white/60 text-sm mb-4">{error}</p>
+        <p className="text-white/60 text-sm mb-4">{friendlyError}</p>
         <Button onClick={handleRetry} className="gold-gradient text-black">
           {t('verify_retry')}
         </Button>

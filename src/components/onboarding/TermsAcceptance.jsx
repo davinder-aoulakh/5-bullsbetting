@@ -113,9 +113,7 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
             onCheckedChange={setTermsAccepted}
             className="border-white/30 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 mt-0.5"
           />
-          <label htmlFor="terms" className="text-white/70 text-sm cursor-pointer">
-            Li e aceito os <span className="text-amber-400">Termos de Uso</span> da plataforma 5-BullsBetting
-          </label>
+          <label htmlFor="terms" className="text-white/70 text-sm cursor-pointer" dangerouslySetInnerHTML={{ __html: t('terms_accept_terms').replace('<span>', '<span class="text-amber-400">') }} />
         </div>
 
         <div className="flex items-start gap-3">
@@ -125,9 +123,7 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
             onCheckedChange={setPrivacyAccepted}
             className="border-white/30 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 mt-0.5"
           />
-          <label htmlFor="privacy" className="text-white/70 text-sm cursor-pointer">
-            Li e aceito a <span className="text-amber-400">Política de Privacidade</span> e autorizo o tratamento dos meus dados conforme a LGPD
-          </label>
+          <label htmlFor="privacy" className="text-white/70 text-sm cursor-pointer" dangerouslySetInnerHTML={{ __html: t('terms_accept_privacy').replace('<span>', '<span class="text-amber-400">') }} />
         </div>
 
         <div className="flex items-start gap-3">
@@ -138,7 +134,7 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
             className="border-white/30 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 mt-0.5"
           />
           <label htmlFor="age" className="text-white/50 text-sm">
-            Declaro ter 18 anos ou mais de idade
+            {t('terms_age_declaration')}
           </label>
         </div>
       </div>

@@ -92,7 +92,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       setStatus('completed');
       onComplete({
         verified: resultResponse.data.approved,
-        transactionId: transactionId,
+        transactionId: verificationData.transactionId,
         result: resultResponse.data
       });
 

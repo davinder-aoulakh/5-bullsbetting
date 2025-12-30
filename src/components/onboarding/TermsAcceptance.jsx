@@ -3,8 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, FileText, Eye, Lock } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccepted, setTermsAccepted, setPrivacyAccepted }) {
+  const { t } = useLanguage();
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 

@@ -33,10 +33,10 @@ export default function IdentityConfirmation({ userData }) {
           <CheckCircle2 className="w-8 h-8 text-black" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">
-          Confirme seus dados
+          {t('identity_confirm_title')}
         </h3>
         <p className="text-white/60 text-sm">
-          Verifique se as informações abaixo estão corretas
+          {t('identity_confirm_subtitle')}
         </p>
       </div>
 

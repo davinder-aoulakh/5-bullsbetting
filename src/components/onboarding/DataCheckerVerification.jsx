@@ -80,6 +80,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
 
         console.log('📊 Poll response received:', {
           completed: pollResponse.data.completed,
+          pending: pollResponse.data.pending,
           resultsCount: pollResponse.data.results?.length || 0,
           results: pollResponse.data.results,
           fullResponse: pollResponse.data
@@ -98,6 +99,8 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
           clearInterval(interval);
           const resultId = pollResponse.data.results[0].resultId;
           await getResult(resultId);
+        } else if (pollResponse.data.pending) {
+          console.log('⏳ Still waiting for user to complete verification (empty response from DataChecker)');
         } else {
           console.log('⏳ Verification not yet completed, will check again in 5 seconds');
         }
@@ -316,19 +319,25 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
 
         {status === 'polling' && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left">
-              <p className="text-white/80 text-sm">
-                {t('verify_instructions_step1')}
-                <br />
-                {t('verify_instructions_step2')}
-                <br />
-                {t('verify_instructions_step3')}
-              </p>
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left">
+              <div className="flex items-start gap-3">
+                <Smartphone className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-white font-medium mb-2">Please complete verification on your device:</p>
+                  <ol className="text-white/70 text-sm space-y-1 list-decimal list-inside">
+                    <li>Open the verification link in the new tab</li>
+                    <li>Follow the on-screen instructions</li>
+                    <li>Take photos of your ID document</li>
+                    <li>Complete the facial recognition</li>
+                    <li>Wait for confirmation</li>
+                  </ol>
+                </div>
+              </div>
             </div>
-            
+
             <div className="flex items-center justify-center gap-2 text-amber-400 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Checking for completion every 5 seconds...</span>
+              <span>Waiting for you to complete verification...</span>
             </div>
           </div>
         )}

@@ -118,7 +118,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     return (
       <div className="text-center py-8">
         <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
-        <p className="text-white font-medium">Inicializando verificação...</p>
+        <p className="text-white font-medium">{t('verify_initializing')}</p>
       </div>
     );
   }
@@ -127,21 +127,43 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     return (
       <div className="text-center py-8">
         <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-white font-medium mb-2">Erro na verificação</p>
+        <p className="text-white font-medium mb-2">{t('verify_error_title')}</p>
         <p className="text-white/60 text-sm mb-4">{error}</p>
         <Button onClick={handleRetry} className="gold-gradient text-black">
-          Tentar Novamente
+          {t('verify_retry')}
         </Button>
       </div>
     );
   }
 
-  if (status === 'completed') {
+  if (status === 'success') {
     return (
-      <div className="text-center py-8">
-        <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-        <p className="text-white font-medium">Verificação concluída!</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center py-8"
+      >
+        <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+        <h3 className="text-2xl font-bold text-white mb-2">{t('verify_success_title')}</h3>
+        <p className="text-white/60 mb-4">{t('verify_success_desc')}</p>
+      </motion.div>
+    );
+  }
+
+  if (status === 'failed') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center py-8"
+      >
+        <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 className="text-2xl font-bold text-white mb-2">{t('verify_failed_title')}</h3>
+        <p className="text-white/60 mb-4">{t('verify_failed_desc')}</p>
+        <Button onClick={handleRetry} className="gold-gradient text-black">
+          {t('verify_retry')}
+        </Button>
+      </motion.div>
     );
   }
 

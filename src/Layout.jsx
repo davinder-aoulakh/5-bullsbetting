@@ -220,11 +220,13 @@ function LayoutContent({ children, currentPageName }) {
                 </>
               ) : (
                 <>
-                  <Link to={createPageUrl('Login')}>
-                    <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5">
-                      {t('nav_login')}
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    className="text-white/70 hover:text-white hover:bg-white/5"
+                    onClick={() => base44.auth.redirectToLogin(createPageUrl('Home'))}
+                  >
+                    {t('nav_login')}
+                  </Button>
                   <Link to={createPageUrl('Onboarding')}>
                     <Button className="gold-gradient text-black font-semibold hover:opacity-90">
                       {t('nav_signup')}

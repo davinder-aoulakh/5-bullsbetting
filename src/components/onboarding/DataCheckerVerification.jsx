@@ -62,9 +62,12 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     
     const interval = setInterval(async () => {
       try {
+        console.log('Polling verification status...');
         const pollResponse = await base44.functions.invoke('datacheckerPoll', {
           transactionId
         });
+
+        console.log('Poll response:', pollResponse.data);
 
         if (pollResponse.data.error) {
           clearInterval(interval);
@@ -74,6 +77,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         }
 
         if (pollResponse.data.completed && pollResponse.data.results?.length > 0) {
+          console.log('Verification completed, fetching result...');
           clearInterval(interval);
           const resultId = pollResponse.data.results[0].resultId;
           await getResult(resultId);
@@ -280,20 +284,26 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         <Button
           onClick={() => window.open(verificationData.link, '_blank')}
           className="gold-gradient text-black font-semibold w-full"
-          disabled={status !== 'ready'}
         >
-          {status === 'ready' ? t('verify_open_button') : t('verify_in_progress')}
+          {status === 'ready' ? t('verify_open_button') : 'Open Verification (again)'}
         </Button>
 
         {status === 'polling' && (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left">
-            <p className="text-white/80 text-sm">
-              {t('verify_instructions_step1')}
-              <br />
-              {t('verify_instructions_step2')}
-              <br />
-              {t('verify_instructions_step3')}
-            </p>
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left">
+              <p className="text-white/80 text-sm">
+                {t('verify_instructions_step1')}
+                <br />
+                {t('verify_instructions_step2')}
+                <br />
+                {t('verify_instructions_step3')}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-2 text-amber-400 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Checking for completion every 5 seconds...</span>
+            </div>
           </div>
         )}
       </motion.div>

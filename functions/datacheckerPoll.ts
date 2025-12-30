@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
     console.log('🔍 Results type:', typeof data.results);
     console.log('🔍 Results length:', data.results?.length);
 
-    // Check completion based on DataChecker's 'completed' field or presence of results
-    const isCompleted = data.completed === true || (data.results && data.results.length > 0);
+    // Check completion based on the presence of the 'completed' timestamp (UTC string) or results
+    const isCompleted = !!data.completed || (data.results && data.results.length > 0);
     const isEmpty = Object.keys(data).length === 0;
     console.log('🔍 Response is empty (pending):', isEmpty);
     console.log('🔍 Completed status:', isCompleted);

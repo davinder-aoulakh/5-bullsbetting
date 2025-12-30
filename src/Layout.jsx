@@ -220,7 +220,7 @@ function LayoutContent({ children, currentPageName }) {
                 </>
               ) : (
                 <>
-                  <Link to={createPageUrl('Onboarding')}>
+                  <Link to={createPageUrl('Login')}>
                     <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5">
                       {t('nav_login')}
                     </Button>

@@ -29,6 +29,12 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     try {
       setStatus('initializing');
       
+      console.log('🚀 Initializing verification with user data:', {
+        name: userData.full_name,
+        country: userData.country,
+        id_type: userData.id_type
+      });
+      
       const response = await base44.functions.invoke('datacheckerCreateLink', {
         name: userData.full_name,
         email: userData.email || '',
@@ -39,10 +45,14 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         id_value: userData.id_value
       });
 
+      console.log('📬 CreateLink response:', response.data);
+
       if (response.data.error) {
         throw new Error(response.data.error);
       }
 
+      console.log('✅ TransactionId received:', response.data.transactionId);
+      
       setVerificationData(response.data);
       setStatus('ready');
 

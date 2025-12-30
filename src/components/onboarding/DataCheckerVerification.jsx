@@ -16,9 +16,12 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
   useEffect(() => {
     initializeVerification();
     return () => {
-      if (pollingInterval) clearInterval(pollingInterval);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
     };
-  }, []);
+  }, [pollingInterval]);
 
   const initializeVerification = async () => {
     try {

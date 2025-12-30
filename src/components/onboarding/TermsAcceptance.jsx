@@ -35,8 +35,8 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
               <FileText className="w-5 h-5 text-blue-400" />
             </div>
             <div className="text-left">
-              <p className="text-white font-medium">Termos de Uso</p>
-              <p className="text-white/50 text-sm">Regras e condições da plataforma</p>
+              <p className="text-white font-medium">{t('terms_of_use')}</p>
+              <p className="text-white/50 text-sm">{t('terms_of_use_desc')}</p>
             </div>
           </div>
           <Eye className="w-5 h-5 text-white/50" />

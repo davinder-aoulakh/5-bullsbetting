@@ -47,33 +47,19 @@ Deno.serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.accessToken;
 
-    // Try polling with both secureId and transactionId
-    // First try as secureId
-    let pollUrl = `${DATACHECKER_BASE_URL}/api/v2/poll?secureId=${transactionId}`;
-    console.log('🌐 Polling URL (secureId):', pollUrl);
+    // Poll for results using transactionId as per documentation
+    const pollUrl = `${DATACHECKER_BASE_URL}/api/v2/poll?transactionId=${transactionId}`;
+    console.log('🌐 Polling URL:', pollUrl);
     console.log('🔑 Using access token:', accessToken ? 'Present' : 'Missing');
     
-    let response = await fetch(pollUrl, {
+    const response = await fetch(pollUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
     });
 
-    console.log('📡 Response status (secureId):', response.status);
-    
-    // If that doesn't work, try with transactionId
-    if (response.status !== 200) {
-      pollUrl = `${DATACHECKER_BASE_URL}/api/v2/poll?transactionId=${transactionId}`;
-      console.log('🔄 Retrying with transactionId:', pollUrl);
-      response = await fetch(pollUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-      console.log('📡 Response status (transactionId):', response.status);
-    }
+    console.log('📡 Response status:', response.status);
 
     console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 

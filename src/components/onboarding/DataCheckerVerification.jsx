@@ -90,12 +90,18 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         throw new Error(resultResponse.data.error);
       }
 
-      setStatus('completed');
-      onComplete({
-        verified: resultResponse.data.approved,
-        transactionId: verificationData.transactionId,
-        result: resultResponse.data
-      });
+      const approved = resultResponse.data.approved;
+      setVerificationResult(resultResponse.data);
+      setStatus(approved ? 'success' : 'failed');
+
+      // Call onComplete after showing the result
+      setTimeout(() => {
+        onComplete({
+          verified: approved,
+          transactionId: verificationData.transactionId,
+          result: resultResponse.data
+        });
+      }, approved ? 2000 : 0);
 
     } catch (err) {
       setError(err.message || 'Failed to retrieve verification result');

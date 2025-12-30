@@ -284,8 +284,9 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         <Button
           onClick={() => window.open(verificationData.link, '_blank')}
           className="gold-gradient text-black font-semibold w-full"
+          disabled={status === 'polling'}
         >
-          {status === 'ready' ? t('verify_open_button') : 'Open Verification (again)'}
+          {status === 'ready' ? t('verify_open_button') : t('verify_in_progress')}
         </Button>
 
         {status === 'polling' && (

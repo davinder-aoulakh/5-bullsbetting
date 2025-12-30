@@ -66,6 +66,8 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
+    console.log('DataChecker result response:', JSON.stringify(data, null, 2));
+
     // Determine overall status
     const identityApproved = data.identity?.result === 'APPROVED';
     const faceApproved = data.faceVerify?.result === 'APPROVED';

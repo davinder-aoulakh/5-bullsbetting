@@ -66,6 +66,8 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
+    console.log('DataChecker poll response:', JSON.stringify(data, null, 2));
+
     return Response.json({
       results: data.results || [],
       completed: data.results && data.results.length > 0

@@ -89,11 +89,13 @@ Deno.serve(async (req) => {
       r => r.transactionId === transactionId
     );
 
+    console.log('🔍 Looking for transactionId:', transactionId);
     console.log('🔍 Found transaction:', transactionResult ? 'Yes' : 'No');
-    console.log('🔍 Transaction result:', transactionResult);
+    console.log('🔍 Transaction result:', JSON.stringify(transactionResult, null, 2));
 
     if (!transactionResult) {
       // Transaction not completed yet
+      console.log('⏳ Transaction not found in results array, returning pending status');
       return Response.json({
         completed: false,
         pending: true,
@@ -102,6 +104,7 @@ Deno.serve(async (req) => {
     }
 
     // Transaction is completed
+    console.log('✅ Returning completed status with result:', transactionResult.resultId);
     return Response.json({
       completed: true,
       pending: false,

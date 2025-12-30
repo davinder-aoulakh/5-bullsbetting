@@ -58,8 +58,7 @@ export default function IdentityConfirmation({ userData }) {
       </Card>
 
       <p className="text-white/40 text-xs text-center">
-        Estes dados foram obtidos através da consulta ao seu CPF e serão utilizados 
-        para verificar sua identidade conforme exigido pela Portaria SPA/MF 722/2024.
+        {t('identity_notice')}
       </p>
     </div>
   );

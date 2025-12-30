@@ -7,10 +7,11 @@ import { useLanguage } from '@/components/LanguageContext';
 
 export default function DataCheckerVerification({ onComplete, userData, isMobile }) {
   const { t } = useLanguage();
-  const [status, setStatus] = useState('initializing'); // initializing, ready, polling, completed, error
+  const [status, setStatus] = useState('initializing'); // initializing, ready, polling, completed, error, success, failed
   const [verificationData, setVerificationData] = useState(null);
   const [error, setError] = useState('');
   const [pollingInterval, setPollingInterval] = useState(null);
+  const [verificationResult, setVerificationResult] = useState(null);
 
   useEffect(() => {
     initializeVerification();

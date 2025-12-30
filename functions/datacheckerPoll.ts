@@ -7,6 +7,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { transactionId } = body;
 
+    console.log('🔍 Polling request received for transactionId:', transactionId);
+
     if (!transactionId) {
       return Response.json({ 
         error: 'transactionId is required' 

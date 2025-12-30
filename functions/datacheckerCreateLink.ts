@@ -96,13 +96,20 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
+    console.log('✅ SecureIDLink created successfully:', {
+      transactionId: data.transactionId,
+      secureId: data.secureId,
+      customerReference: customerReference
+    });
+
     // Note: Verification log will be created after user account is created upon successful verification
 
     return Response.json({
       link: data.link,
       transactionId: data.transactionId,
       qrCode: data.qrCode,
-      secureId: data.secureId
+      secureId: data.secureId,
+      customerReference: customerReference
     });
 
   } catch (error) {

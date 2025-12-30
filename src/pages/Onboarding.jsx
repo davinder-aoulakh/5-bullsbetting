@@ -175,8 +175,8 @@ export default function Onboarding() {
   // Driver's license validation
   const validateDriverLicense = (value, country) => {
     switch (country) {
-      case 'AU': // Australian license: 8-10 digits (varies by state)
-        return /^\d{8,10}$/.test(value);
+      case 'AU': // Australian license: 6-10 digits (varies by state - WA has 7 digits)
+        return /^\d{6,10}$/.test(value);
       case 'NL': // Dutch license: 10 digits
         return /^\d{10}$/.test(value);
       default:

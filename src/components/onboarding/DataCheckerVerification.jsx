@@ -62,14 +62,20 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     
     const interval = setInterval(async () => {
       try {
-        console.log('Polling verification status...');
+        console.log('🔄 Polling verification status for transaction:', transactionId);
         const pollResponse = await base44.functions.invoke('datacheckerPoll', {
           transactionId
         });
 
-        console.log('Poll response:', pollResponse.data);
+        console.log('📊 Poll response received:', {
+          completed: pollResponse.data.completed,
+          resultsCount: pollResponse.data.results?.length || 0,
+          results: pollResponse.data.results,
+          fullResponse: pollResponse.data
+        });
 
         if (pollResponse.data.error) {
+          console.error('❌ Poll error:', pollResponse.data.error);
           clearInterval(interval);
           setError(pollResponse.data.error);
           setStatus('error');
@@ -77,13 +83,15 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         }
 
         if (pollResponse.data.completed && pollResponse.data.results?.length > 0) {
-          console.log('Verification completed, fetching result...');
+          console.log('✅ Verification completed! Result ID:', pollResponse.data.results[0].resultId);
           clearInterval(interval);
           const resultId = pollResponse.data.results[0].resultId;
           await getResult(resultId);
+        } else {
+          console.log('⏳ Verification not yet completed, will check again in 5 seconds');
         }
       } catch (err) {
-        console.error('Polling error:', err);
+        console.error('❌ Polling error:', err);
         clearInterval(interval);
         setError(err.message || 'Failed to check verification status');
         setStatus('error');
@@ -110,15 +118,20 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
 
   const getResult = async (resultId) => {
     try {
+      console.log('📥 Fetching result for ID:', resultId);
       const resultResponse = await base44.functions.invoke('datacheckerGetResult', {
         resultId
       });
+
+      console.log('📋 Result response:', resultResponse.data);
 
       if (resultResponse.data.error) {
         throw new Error(resultResponse.data.error);
       }
 
       const approved = resultResponse.data.approved;
+      console.log('🎯 Verification result:', approved ? 'APPROVED ✅' : 'REJECTED ❌');
+      
       setVerificationResult(resultResponse.data);
       setStatus(approved ? 'success' : 'failed');
 
@@ -132,6 +145,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       }, approved ? 2000 : 0);
 
     } catch (err) {
+      console.error('❌ Error getting result:', err);
       setError(err.message || 'Failed to retrieve verification result');
       setStatus('error');
     }

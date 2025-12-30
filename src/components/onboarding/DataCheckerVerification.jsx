@@ -33,7 +33,10 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         name: userData.full_name,
         email: userData.email || '',
         phone: userData.phone || '',
-        cpf: userData.cpf
+        cpf: userData.cpf,
+        country: userData.country,
+        id_type: userData.id_type,
+        id_value: userData.id_value
       });
 
       if (response.data.error) {

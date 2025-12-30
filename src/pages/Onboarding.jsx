@@ -20,7 +20,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import StepIndicator from '@/components/onboarding/StepIndicator';
+import CountrySelector from '@/components/onboarding/CountrySelector';
 import CPFInput from '@/components/onboarding/CPFInput';
+import PassportInput from '@/components/onboarding/PassportInput';
+import DriverLicenseInput from '@/components/onboarding/DriverLicenseInput';
+import SedulaInput from '@/components/onboarding/SedulaInput';
+import DocumentTypeSelector from '@/components/onboarding/DocumentTypeSelector';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
 import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
@@ -33,11 +38,30 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Country and document type
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  
   // Form data
   const [cpf, setCpf] = useState('');
   const [cpfError, setCpfError] = useState('');
   const [cpfValidating, setCpfValidating] = useState(false);
   const [cpfValid, setCpfValid] = useState(false);
+  
+  const [passport, setPassport] = useState('');
+  const [passportError, setPassportError] = useState('');
+  const [passportValidating, setPassportValidating] = useState(false);
+  const [passportValid, setPassportValid] = useState(false);
+  
+  const [driverLicense, setDriverLicense] = useState('');
+  const [licenseError, setLicenseError] = useState('');
+  const [licenseValidating, setLicenseValidating] = useState(false);
+  const [licenseValid, setLicenseValid] = useState(false);
+  
+  const [sedula, setSedula] = useState('');
+  const [sedulaError, setSedulaError] = useState('');
+  const [sedulaValidating, setSedulaValidating] = useState(false);
+  const [sedulaValid, setSedulaValid] = useState(false);
   
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -58,11 +82,12 @@ export default function Onboarding() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const steps = [
-    { label: t('onb_step_cpf') },
-    { label: t('onb_step_account') },
-    { label: t('onb_step_data') },
-    { label: t('onb_step_terms') },
-    { label: t('onb_step_verification') },
+    { label: 'Country' },
+    { label: 'Identity' },
+    { label: 'Account' },
+    { label: 'Confirm' },
+    { label: 'Terms' },
+    { label: 'Verification' },
   ];
 
   // CPF validation
@@ -114,6 +139,95 @@ export default function Onboarding() {
     }
   };
 
+  // Passport validation
+  const validatePassport = (value, country) => {
+    switch (country) {
+      case 'AU': // Australian passport: Letter + 7 digits
+        return /^[A-Z]\d{7}$/.test(value);
+      case 'NL': // Dutch passport: 2 letters + 6 digits + 1 digit
+        return /^[A-Z]{2}\d{6}\d$/.test(value);
+      case 'CW': // Curacao passport (similar to Dutch)
+        return /^[A-Z]{2}\d{6}\d$/.test(value);
+      default:
+        return value.length >= 6;
+    }
+  };
+
+  const handlePassportChange = (value) => {
+    setPassport(value);
+    setPassportError('');
+    setPassportValid(false);
+    
+    if (value.length >= 6) {
+      setPassportValidating(true);
+      
+      setTimeout(() => {
+        if (validatePassport(value, selectedCountry)) {
+          setPassportValid(true);
+        } else {
+          setPassportError('Invalid passport number format');
+        }
+        setPassportValidating(false);
+      }, 500);
+    }
+  };
+
+  // Driver's license validation
+  const validateDriverLicense = (value, country) => {
+    switch (country) {
+      case 'AU': // Australian license: 8-10 digits (varies by state)
+        return /^\d{8,10}$/.test(value);
+      case 'NL': // Dutch license: 10 digits
+        return /^\d{10}$/.test(value);
+      default:
+        return value.length >= 6;
+    }
+  };
+
+  const handleDriverLicenseChange = (value) => {
+    setDriverLicense(value);
+    setLicenseError('');
+    setLicenseValid(false);
+    
+    if (value.length >= 6) {
+      setLicenseValidating(true);
+      
+      setTimeout(() => {
+        if (validateDriverLicense(value, selectedCountry)) {
+          setLicenseValid(true);
+        } else {
+          setLicenseError('Invalid driver\'s license format');
+        }
+        setLicenseValidating(false);
+      }, 500);
+    }
+  };
+
+  // Sedula validation
+  const validateSedula = (value) => {
+    // Curacao Sedula format validation
+    return value.length >= 6 && /^[A-Z0-9]+$/.test(value);
+  };
+
+  const handleSedulaChange = (value) => {
+    setSedula(value);
+    setSedulaError('');
+    setSedulaValid(false);
+    
+    if (value.length >= 6) {
+      setSedulaValidating(true);
+      
+      setTimeout(() => {
+        if (validateSedula(value)) {
+          setSedulaValid(true);
+        } else {
+          setSedulaError('Invalid Sédula format');
+        }
+        setSedulaValidating(false);
+      }, 500);
+    }
+  };
+
   const formatPhone = (value) => {
     const digits = value.replace(/\D/g, '');
     if (digits.length <= 2) return digits;
@@ -135,15 +249,37 @@ export default function Onboarding() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1:
-        return cpfValid && !cpfValidating && fullName.trim() && dateOfBirth;
-      case 2:
+      case 1: // Country selection
+        return selectedCountry !== '';
+      case 2: // Identity documents
+        if (selectedCountry === 'BR') {
+          return cpfValid && !cpfValidating && fullName.trim() && dateOfBirth;
+        } else if (selectedCountry === 'CW') {
+          // Curacao needs document type selected
+          if (!documentType) return false;
+        } else if (selectedCountry === 'AU' || selectedCountry === 'NL') {
+          // Australia/Netherlands need document type selected
+          if (!documentType) return false;
+        }
+        
+        // Check specific document validity
+        let docValid = false;
+        if (documentType === 'passport') {
+          docValid = passportValid && !passportValidating;
+        } else if (documentType === 'driver_license') {
+          docValid = licenseValid && !licenseValidating;
+        } else if (documentType === 'sedula') {
+          docValid = sedulaValid && !sedulaValidating;
+        }
+        
+        return docValid && fullName.trim() && dateOfBirth;
+      case 3: // Account details
         return validateEmail(email) && validatePassword(password) && phone.replace(/\D/g, '').length >= 10;
-      case 3:
+      case 4: // Confirmation
         return true;
-      case 4:
+      case 5: // Terms
         return termsAccepted && privacyAccepted && kycPassed;
-      case 5:
+      case 6: // Verification
         return idvCompleted;
       default:
         return false;
@@ -210,23 +346,43 @@ export default function Onboarding() {
   };
 
   const nextStep = async () => {
-    if (currentStep === 1) {
-      // Set userData when moving from step 1
+    if (currentStep === 2) {
+      // Set userData when moving from step 2 (identity)
+      let idValue = '';
+      let idType = '';
+      
+      if (selectedCountry === 'BR') {
+        idValue = cpf;
+        idType = 'cpf';
+      } else if (documentType === 'passport') {
+        idValue = passport;
+        idType = 'passport';
+      } else if (documentType === 'driver_license') {
+        idValue = driverLicense;
+        idType = 'driver_license';
+      } else if (documentType === 'sedula') {
+        idValue = sedula;
+        idType = 'sedula';
+      }
+      
       setUserData({
         full_name: fullName,
         date_of_birth: dateOfBirth,
-        cpf: cpf
+        country: selectedCountry,
+        id_type: idType,
+        id_value: idValue,
+        cpf: selectedCountry === 'BR' ? cpf : undefined
       });
-      setCurrentStep(prev => Math.min(prev + 1, 5));
-    } else if (currentStep === 4 && !kycPassed) {
+      setCurrentStep(prev => Math.min(prev + 1, 6));
+    } else if (currentStep === 5 && !kycPassed) {
       await handleKYCCheck();
       if (kycPassed) {
-        setCurrentStep(prev => Math.min(prev + 1, 5));
+        setCurrentStep(prev => Math.min(prev + 1, 6));
       }
-    } else if (currentStep === 5 && idvCompleted) {
+    } else if (currentStep === 6 && idvCompleted) {
       await handleComplete();
     } else {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+      setCurrentStep(prev => Math.min(prev + 1, 6));
     }
   };
 
@@ -235,7 +391,7 @@ export default function Onboarding() {
   };
 
   useEffect(() => {
-    if (currentStep === 4 && termsAccepted && privacyAccepted && !kycPassed) {
+    if (currentStep === 5 && termsAccepted && privacyAccepted && !kycPassed) {
       handleKYCCheck();
     }
   }, [termsAccepted, privacyAccepted, currentStep]);
@@ -260,16 +416,31 @@ export default function Onboarding() {
         <div className="w-full max-w-md">
           <StepIndicator 
             currentStep={currentStep} 
-            totalSteps={5} 
+            totalSteps={6} 
             steps={steps}
           />
 
           <Card className="bg-white/5 border-white/10 backdrop-blur-xl p-6 rounded-2xl">
             <AnimatePresence mode="wait">
-              {/* Step 1: CPF */}
+              {/* Step 1: Country Selection */}
               {currentStep === 1 && (
                 <motion.div
                   key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <CountrySelector
+                    selectedCountry={selectedCountry}
+                    onSelect={setSelectedCountry}
+                  />
+                </motion.div>
+              )}
+
+              {/* Step 2: Identity Documents */}
+              {currentStep === 2 && (
+                <motion.div
+                  key="step2"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -277,36 +448,84 @@ export default function Onboarding() {
                 >
                   <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      {t('onb_welcome_title')}
+                      Identity Verification
                     </h2>
                     <p className="text-white/60">
-                      {t('onb_welcome_subtitle')}
+                      Provide your identification details
                     </p>
                   </div>
 
-                  <CPFInput
-                    value={cpf}
-                    onChange={handleCPFChange}
-                    error={cpfError}
-                    isValidating={cpfValidating}
-                    isValid={cpfValid}
-                  />
+                  {/* Show document type selector for non-Brazil countries */}
+                  {selectedCountry !== 'BR' && (
+                    <DocumentTypeSelector
+                      country={selectedCountry}
+                      selectedType={documentType}
+                      onSelect={setDocumentType}
+                    />
+                  )}
 
+                  {/* Brazil - CPF */}
+                  {selectedCountry === 'BR' && (
+                    <CPFInput
+                      value={cpf}
+                      onChange={handleCPFChange}
+                      error={cpfError}
+                      isValidating={cpfValidating}
+                      isValid={cpfValid}
+                    />
+                  )}
+
+                  {/* Passport */}
+                  {documentType === 'passport' && (
+                    <PassportInput
+                      value={passport}
+                      onChange={handlePassportChange}
+                      error={passportError}
+                      isValidating={passportValidating}
+                      isValid={passportValid}
+                      country={selectedCountry}
+                    />
+                  )}
+
+                  {/* Driver's License */}
+                  {documentType === 'driver_license' && (
+                    <DriverLicenseInput
+                      value={driverLicense}
+                      onChange={handleDriverLicenseChange}
+                      error={licenseError}
+                      isValidating={licenseValidating}
+                      isValid={licenseValid}
+                      country={selectedCountry}
+                    />
+                  )}
+
+                  {/* Sédula */}
+                  {documentType === 'sedula' && (
+                    <SedulaInput
+                      value={sedula}
+                      onChange={handleSedulaChange}
+                      error={sedulaError}
+                      isValidating={sedulaValidating}
+                      isValid={sedulaValid}
+                    />
+                  )}
+
+                  {/* Name and Date of Birth */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-white/80">Nome Completo</Label>
+                      <Label htmlFor="fullName" className="text-white/80">Full Name</Label>
                       <Input
                         id="fullName"
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Seu nome completo"
+                        placeholder="Your full name"
                         className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dateOfBirth" className="text-white/80">Data de Nascimento</Label>
+                      <Label htmlFor="dateOfBirth" className="text-white/80">Date of Birth</Label>
                       <Input
                         id="dateOfBirth"
                         type="date"
@@ -317,26 +536,11 @@ export default function Onboarding() {
                       />
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2 pt-4">
-                    <div className="text-center p-3 rounded-lg bg-white/5">
-                      <Shield className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">{t('onb_secure')}</span>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-white/5">
-                      <Zap className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">{t('onb_fast')}</span>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-white/5">
-                      <Trophy className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                      <span className="text-xs text-white/60">{t('onb_licensed')}</span>
-                    </div>
-                  </div>
                 </motion.div>
               )}
 
-              {/* Step 2: Account Details */}
-              {currentStep === 2 && (
+              {/* Step 3: Account Details */}
+              {currentStep === 3 && (
                 <motion.div
                   key="step2"
                   initial={{ opacity: 0, x: 20 }}
@@ -406,10 +610,10 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* Step 3: Identity Confirmation */}
-              {currentStep === 3 && (
+              {/* Step 4: Identity Confirmation */}
+              {currentStep === 4 && (
                 <motion.div
-                  key="step3"
+                  key="step4"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -418,8 +622,8 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* Step 4: Terms & KYC */}
-              {currentStep === 4 && (
+              {/* Step 5: Terms & KYC */}
+              {currentStep === 5 && (
                 <motion.div
                   key="step4"
                   initial={{ opacity: 0, x: 20 }}
@@ -459,10 +663,10 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* Step 5: ID Verification */}
-              {currentStep === 5 && (
+              {/* Step 6: ID Verification */}
+              {currentStep === 6 && (
                 <motion.div
-                  key="step5"
+                  key="step6"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -488,7 +692,7 @@ export default function Onboarding() {
                 {t('onb_back')}
               </Button>
 
-              {currentStep < 5 ? (
+              {currentStep < 6 ? (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed() || loading}

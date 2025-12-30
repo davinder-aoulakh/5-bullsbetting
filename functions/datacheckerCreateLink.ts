@@ -5,7 +5,7 @@ const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
 Deno.serve(async (req) => {
   try {
     const body = await req.json();
-    const { name, email, phone, cpf } = body;
+    const { name, email, phone, cpf, country, id_type, id_value } = body;
 
     // Get access token directly (call our own auth logic)
     const clientId = Deno.env.get('DATACHECKER_CLIENT_ID');
@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
     const accessToken = tokenData.accessToken;
 
     // Create secure ID link
-    const customerReference = `5bulls_${cpf.replace(/\D/g, '')}_${Date.now()}`;
+    const identifierValue = id_value || cpf || '';
+    const customerReference = `5bulls_${country}_${identifierValue.replace(/\W/g, '')}_${Date.now()}`;
     
     const response = await fetch(`${DATACHECKER_BASE_URL}/api/v2/secureidlink`, {
       method: 'POST',

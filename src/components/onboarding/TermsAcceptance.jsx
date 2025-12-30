@@ -17,10 +17,10 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
           <Shield className="w-8 h-8 text-black" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">
-          Termos e Condições
+          {t('terms_title')}
         </h3>
         <p className="text-white/60 text-sm">
-          Leia e aceite os termos para continuar
+          {t('terms_subtitle')}
         </p>
       </div>
 

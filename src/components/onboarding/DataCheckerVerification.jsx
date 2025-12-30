@@ -58,6 +58,13 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
           transactionId
         });
 
+        if (pollResponse.data.error) {
+          clearInterval(interval);
+          setError(pollResponse.data.error);
+          setStatus('error');
+          return;
+        }
+
         if (pollResponse.data.completed && pollResponse.data.results?.length > 0) {
           clearInterval(interval);
           const resultId = pollResponse.data.results[0].resultId;
@@ -65,6 +72,9 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         }
       } catch (err) {
         console.error('Polling error:', err);
+        clearInterval(interval);
+        setError(err.message || 'Failed to check verification status');
+        setStatus('error');
       }
     }, 5000); // Poll every 5 seconds
 
@@ -72,11 +82,17 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
 
     // Stop polling after 5 minutes
     setTimeout(() => {
-      clearInterval(interval);
-      if (status === 'polling') {
-        setError('Verification timeout. Please try again.');
-        setStatus('error');
+      if (interval) {
+        clearInterval(interval);
       }
+      // Check if still polling after timeout
+      setStatus((currentStatus) => {
+        if (currentStatus === 'polling') {
+          setError(t('verify_error_title'));
+          return 'error';
+        }
+        return currentStatus;
+      });
     }, 300000);
   };
 

@@ -15,10 +15,12 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
 
   useEffect(() => {
     initializeVerification();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (pollingInterval) {
         clearInterval(pollingInterval);
-        setPollingInterval(null);
       }
     };
   }, [pollingInterval]);

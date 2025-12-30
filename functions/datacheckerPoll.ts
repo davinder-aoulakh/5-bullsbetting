@@ -46,6 +46,9 @@ Deno.serve(async (req) => {
     const accessToken = tokenData.accessToken;
 
     // Poll for results
+    console.log('🌐 Polling URL:', `${DATACHECKER_BASE_URL}/api/v2/poll?transactionId=${transactionId}`);
+    console.log('🔑 Using access token:', accessToken ? 'Present' : 'Missing');
+    
     const response = await fetch(
       `${DATACHECKER_BASE_URL}/api/v2/poll?transactionId=${transactionId}`,
       {
@@ -56,15 +59,23 @@ Deno.serve(async (req) => {
       }
     );
 
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const error = await response.text();
+      console.error('❌ Poll request failed:', error);
       return Response.json({ 
         error: 'Failed to poll verification status',
-        details: error
+        details: error,
+        status: response.status
       }, { status: response.status });
     }
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('📄 Raw response text:', responseText);
+    
+    const data = responseText ? JSON.parse(responseText) : {};
 
     console.log('🔍 DataChecker RAW poll response:', JSON.stringify(data, null, 2));
     console.log('🔍 Response type:', typeof data);

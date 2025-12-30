@@ -75,23 +75,30 @@ Deno.serve(async (req) => {
 
     const responseText = await response.text();
     console.log('📄 Raw response text:', responseText);
+    console.log('📄 Response text length:', responseText.length);
     
     const data = responseText ? JSON.parse(responseText) : {};
 
     console.log('🔍 DataChecker RAW poll response:', JSON.stringify(data, null, 2));
     console.log('🔍 Response type:', typeof data);
     console.log('🔍 Response keys:', Object.keys(data));
+    console.log('🔍 Has completed property:', 'completed' in data);
+    console.log('🔍 Completed value:', data.completed);
     console.log('🔍 Results field:', data.results);
     console.log('🔍 Results type:', typeof data.results);
     console.log('🔍 Results length:', data.results?.length);
 
-    // DataChecker returns results when verification is completed
-    const hasResults = data.results && Array.isArray(data.results) && data.results.length > 0;
-    
+    // Check completion based on DataChecker's 'completed' field or presence of results
+    const isCompleted = data.completed === true || (data.results && data.results.length > 0);
+    const isEmpty = Object.keys(data).length === 0;
+    console.log('🔍 Response is empty (pending):', isEmpty);
+    console.log('🔍 Completed status:', isCompleted);
+
     return Response.json({
+      completed: isCompleted,
+      pending: isEmpty,
       results: data.results || [],
-      completed: hasResults,
-      rawData: data  // Include raw data for debugging
+      rawData: data
     });
 
   } catch (error) {

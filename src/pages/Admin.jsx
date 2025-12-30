@@ -24,8 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const ADMIN_EMAIL = 'davinder.aoulakh@gmail.com';
-
 export default function Admin() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -42,7 +40,7 @@ export default function Admin() {
   const checkAccess = async () => {
     try {
       const userData = await base44.auth.me();
-      if (userData.email !== ADMIN_EMAIL) {
+      if (userData.role !== 'admin') {
         navigate(createPageUrl('Home'));
         return;
       }

@@ -66,11 +66,20 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
-    console.log('DataChecker poll response:', JSON.stringify(data, null, 2));
+    console.log('🔍 DataChecker RAW poll response:', JSON.stringify(data, null, 2));
+    console.log('🔍 Response type:', typeof data);
+    console.log('🔍 Response keys:', Object.keys(data));
+    console.log('🔍 Results field:', data.results);
+    console.log('🔍 Results type:', typeof data.results);
+    console.log('🔍 Results length:', data.results?.length);
 
+    // DataChecker returns results when verification is completed
+    const hasResults = data.results && Array.isArray(data.results) && data.results.length > 0;
+    
     return Response.json({
       results: data.results || [],
-      completed: data.results && data.results.length > 0
+      completed: hasResults,
+      rawData: data  // Include raw data for debugging
     });
 
   } catch (error) {

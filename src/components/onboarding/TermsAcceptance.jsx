@@ -85,20 +85,20 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
         {showPrivacy && (
           <ScrollArea className="h-48 border-t border-white/10">
             <div className="p-4 text-white/70 text-sm space-y-2">
-              <p><strong className="text-white">Coleta de Dados</strong></p>
-              <p>Coletamos dados pessoais necessários para verificação de identidade e cumprimento das obrigações regulatórias.</p>
+              <p><strong className="text-white">{t('privacy_data_collection')}</strong></p>
+              <p>{t('privacy_data_collection_text')}</p>
               
-              <p><strong className="text-white">Uso dos Dados</strong></p>
-              <p>Seus dados são utilizados para: verificação de identidade, prevenção à fraude, cumprimento da LGPD e regulamentações de jogos.</p>
+              <p><strong className="text-white">{t('privacy_data_usage')}</strong></p>
+              <p>{t('privacy_data_usage_text')}</p>
               
-              <p><strong className="text-white">Compartilhamento</strong></p>
-              <p>Podemos compartilhar dados com: autoridades reguladoras (SPA/MF), provedores de verificação (DataChecker, Scope) e quando exigido por lei.</p>
+              <p><strong className="text-white">{t('privacy_sharing')}</strong></p>
+              <p>{t('privacy_sharing_text')}</p>
               
-              <p><strong className="text-white">Seus Direitos (LGPD)</strong></p>
-              <p>Você tem direito de acessar, corrigir ou solicitar exclusão de seus dados pessoais.</p>
+              <p><strong className="text-white">{t('privacy_rights')}</strong></p>
+              <p>{t('privacy_rights_text')}</p>
               
-              <p><strong className="text-white">Segurança</strong></p>
-              <p>Utilizamos criptografia e servidores seguros localizados no Brasil para proteger seus dados.</p>
+              <p><strong className="text-white">{t('privacy_security')}</strong></p>
+              <p>{t('privacy_security_text')}</p>
             </div>
           </ScrollArea>
         )}

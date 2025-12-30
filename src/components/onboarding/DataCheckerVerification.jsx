@@ -182,7 +182,7 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
     );
   }
 
-  // Mobile flow - redirect to verification link
+  // Mobile flow - open verification in new tab
   if (isMobile && verificationData) {
     return (
       <motion.div
@@ -191,26 +191,46 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         className="text-center space-y-6"
       >
         <div className="mb-6">
-          <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">
-            Continue no navegador
-          </h3>
-          <p className="text-white/60 mb-6">
-            Você será redirecionado para completar a verificação de identidade
-          </p>
+          {status === 'ready' ? (
+            <>
+              <Smartphone className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">
+                Verificação de Identidade
+              </h3>
+              <p className="text-white/60 mb-6">
+                Clique no botão abaixo para abrir a verificação. Após concluir, retorne a esta página.
+              </p>
+            </>
+          ) : (
+            <>
+              <Loader2 className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-spin" />
+              <h3 className="text-xl font-bold text-white mb-2">
+                Aguardando Verificação
+              </h3>
+              <p className="text-white/60 mb-6">
+                Complete a verificação na outra aba e aguarde aqui. Estamos verificando automaticamente...
+              </p>
+            </>
+          )}
         </div>
 
         <Button
-          onClick={() => window.location.href = verificationData.link}
+          onClick={() => window.open(verificationData.link, '_blank')}
           className="gold-gradient text-black font-semibold w-full"
+          disabled={status !== 'ready'}
         >
-          Iniciar Verificação
+          {status === 'ready' ? 'Abrir Verificação' : 'Verificação em Andamento'}
         </Button>
 
         {status === 'polling' && (
-          <div className="flex items-center justify-center gap-2 text-amber-400 mt-4">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Aguardando conclusão...</span>
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left">
+            <p className="text-white/80 text-sm">
+              ✓ Complete a verificação na aba que foi aberta
+              <br />
+              ✓ Após enviar, retorne a esta página
+              <br />
+              ✓ Aguarde enquanto processamos (pode levar alguns segundos)
+            </p>
           </div>
         )}
       </motion.div>

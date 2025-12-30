@@ -245,5 +245,49 @@ export const translations = {
     verify_success_desc: 'Your identity has been successfully verified. Welcome to 5-BullsBetting!',
     verify_failed_title: 'Verification Not Approved',
     verify_failed_desc: 'We were unable to verify your identity. Please contact support.',
+    
+    // Identity Confirmation
+    identity_confirm_title: 'Confirm your data',
+    identity_confirm_subtitle: 'Check if the information below is correct',
+    identity_full_name: 'Full Name',
+    identity_birth_date: 'Date of Birth',
+    identity_cpf: 'CPF',
+    identity_not_informed: 'Not informed',
+    identity_notice: 'This data was obtained through your CPF query and will be used to verify your identity as required by Ordinance SPA/MF 722/2024.',
+    
+    // Terms Acceptance
+    terms_title: 'Terms and Conditions',
+    terms_subtitle: 'Read and accept the terms to continue',
+    terms_of_use: 'Terms of Use',
+    terms_of_use_desc: 'Platform rules and conditions',
+    terms_privacy_policy: 'Privacy Policy',
+    terms_privacy_policy_desc: 'How we protect your data',
+    terms_accept_terms: 'I have read and accept the <span>Terms of Use</span> of the 5-BullsBetting platform',
+    terms_accept_privacy: 'I have read and accept the <span>Privacy Policy</span> and authorize the processing of my data in accordance with LGPD',
+    terms_age_declaration: 'I declare that I am 18 years old or older',
+    
+    // Terms Content
+    terms_eligibility: '1. Eligibility',
+    terms_eligibility_text: 'You must be at least 18 years old and a resident of Brazil to use this platform.',
+    terms_unique_account: '2. Unique Account',
+    terms_unique_account_text: 'Each user can have only one active account. Duplicate accounts will be closed.',
+    terms_identity_verification: '3. Identity Verification',
+    terms_identity_verification_text: 'In accordance with Ordinance SPA/MF 722/2024, we perform identity verification through official documents and facial recognition.',
+    terms_responsible_gaming: '4. Responsible Gaming',
+    terms_responsible_gaming_text: '5-BullsBetting promotes responsible gaming. We provide self-exclusion tools and deposit limits.',
+    terms_payment_methods: '5. Payment Methods',
+    terms_payment_methods_text: 'We accept PIX, bank transfer and boleto. Credit cards are not accepted as per regulation.',
+    
+    // Privacy Content
+    privacy_data_collection: 'Data Collection',
+    privacy_data_collection_text: 'We collect personal data necessary for identity verification and compliance with regulatory obligations.',
+    privacy_data_usage: 'Data Usage',
+    privacy_data_usage_text: 'Your data is used for: identity verification, fraud prevention, LGPD compliance and gaming regulations.',
+    privacy_sharing: 'Sharing',
+    privacy_sharing_text: 'We may share data with: regulatory authorities (SPA/MF), verification providers (DataChecker, Scope) and when required by law.',
+    privacy_rights: 'Your Rights (LGPD)',
+    privacy_rights_text: 'You have the right to access, correct or request deletion of your personal data.',
+    privacy_security: 'Security',
+    privacy_security_text: 'We use encryption and secure servers located in Brazil to protect your data.',
   }
 };

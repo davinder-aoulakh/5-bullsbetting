@@ -75,8 +75,8 @@ export default function TermsAcceptance({ onAccept, termsAccepted, privacyAccept
               <Lock className="w-5 h-5 text-purple-400" />
             </div>
             <div className="text-left">
-              <p className="text-white font-medium">Política de Privacidade</p>
-              <p className="text-white/50 text-sm">Como protegemos seus dados</p>
+              <p className="text-white font-medium">{t('terms_privacy_policy')}</p>
+              <p className="text-white/50 text-sm">{t('terms_privacy_policy_desc')}</p>
             </div>
           </div>
           <Eye className="w-5 h-5 text-white/50" />

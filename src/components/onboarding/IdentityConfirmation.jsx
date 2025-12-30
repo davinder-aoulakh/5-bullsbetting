@@ -1,25 +1,28 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { User, Calendar, MapPin, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function IdentityConfirmation({ userData }) {
+  const { t, language } = useLanguage();
+  
   const fields = [
     { 
       icon: User, 
-      label: 'Nome Completo', 
-      value: userData.full_name || 'Não informado' 
+      label: t('identity_full_name'), 
+      value: userData.full_name || t('identity_not_informed') 
     },
     { 
       icon: Calendar, 
-      label: 'Data de Nascimento', 
+      label: t('identity_birth_date'), 
       value: userData.date_of_birth 
-        ? new Date(userData.date_of_birth).toLocaleDateString('pt-BR')
-        : 'Não informado'
+        ? new Date(userData.date_of_birth).toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')
+        : t('identity_not_informed')
     },
     { 
       icon: MapPin, 
-      label: 'CPF', 
-      value: userData.cpf || 'Não informado' 
+      label: t('identity_cpf'), 
+      value: userData.cpf || t('identity_not_informed') 
     },
   ];
 

@@ -39,6 +39,9 @@ export default function Onboarding() {
   const [cpfValidating, setCpfValidating] = useState(false);
   const [cpfValid, setCpfValid] = useState(false);
   
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -100,21 +103,14 @@ export default function Onboarding() {
     if (digits.length === 11) {
       setCpfValidating(true);
       
-      // Simulate CPF validation and data fetch
       setTimeout(() => {
         if (validateCPF(value)) {
           setCpfValid(true);
-          // Simulate fetching user data from CPF
-          setUserData({
-            full_name: 'João Silva Santos',
-            date_of_birth: '1990-05-15',
-            cpf: value
-          });
         } else {
           setCpfError(t('onb_cpf_invalid'));
         }
         setCpfValidating(false);
-      }, 1500);
+      }, 500);
     }
   };
 
@@ -140,11 +136,11 @@ export default function Onboarding() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return cpfValid && !cpfValidating;
+        return cpfValid && !cpfValidating && fullName.trim() && dateOfBirth;
       case 2:
         return validateEmail(email) && validatePassword(password) && phone.replace(/\D/g, '').length >= 10;
       case 3:
-        return userData.full_name && userData.date_of_birth;
+        return true;
       case 4:
         return termsAccepted && privacyAccepted && kycPassed;
       case 5:
@@ -214,7 +210,15 @@ export default function Onboarding() {
   };
 
   const nextStep = async () => {
-    if (currentStep === 4 && !kycPassed) {
+    if (currentStep === 1) {
+      // Set userData when moving from step 1
+      setUserData({
+        full_name: fullName,
+        date_of_birth: dateOfBirth,
+        cpf: cpf
+      });
+      setCurrentStep(prev => Math.min(prev + 1, 5));
+    } else if (currentStep === 4 && !kycPassed) {
       await handleKYCCheck();
       if (kycPassed) {
         setCurrentStep(prev => Math.min(prev + 1, 5));
@@ -287,6 +291,32 @@ export default function Onboarding() {
                     isValidating={cpfValidating}
                     isValid={cpfValid}
                   />
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="text-white/80">Nome Completo</Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Seu nome completo"
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="dateOfBirth" className="text-white/80">Data de Nascimento</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="h-12 bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-3 gap-2 pt-4">
                     <div className="text-center p-3 rounded-lg bg-white/5">

@@ -227,20 +227,20 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
             <>
               <Smartphone className="w-12 h-12 text-amber-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">
-                Verificação de Identidade
+                {t('verify_identity_title')}
               </h3>
               <p className="text-white/60 mb-6">
-                Clique no botão abaixo para abrir a verificação. Após concluir, retorne a esta página.
+                {t('verify_open_instruction')}
               </p>
             </>
           ) : (
             <>
               <Loader2 className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-spin" />
               <h3 className="text-xl font-bold text-white mb-2">
-                Aguardando Verificação
+                {t('verify_waiting_title')}
               </h3>
               <p className="text-white/60 mb-6">
-                Complete a verificação na outra aba e aguarde aqui. Estamos verificando automaticamente...
+                {t('verify_waiting_desc')}
               </p>
             </>
           )}
@@ -251,17 +251,17 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
           className="gold-gradient text-black font-semibold w-full"
           disabled={status !== 'ready'}
         >
-          {status === 'ready' ? 'Abrir Verificação' : 'Verificação em Andamento'}
+          {status === 'ready' ? t('verify_open_button') : t('verify_in_progress')}
         </Button>
 
         {status === 'polling' && (
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left">
             <p className="text-white/80 text-sm">
-              ✓ Complete a verificação na aba que foi aberta
+              {t('verify_instructions_step1')}
               <br />
-              ✓ Após enviar, retorne a esta página
+              {t('verify_instructions_step2')}
               <br />
-              ✓ Aguarde enquanto processamos (pode levar alguns segundos)
+              {t('verify_instructions_step3')}
             </p>
           </div>
         )}

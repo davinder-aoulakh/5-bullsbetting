@@ -178,10 +178,10 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         <div className="mb-6">
           <Smartphone className="w-12 h-12 text-amber-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-white mb-2">
-            Verifique sua identidade
+            {t('verify_desktop_title')}
           </h3>
           <p className="text-white/60">
-            Escaneie o código QR com seu smartphone para continuar
+            {t('verify_desktop_desc')}
           </p>
         </div>
 
@@ -197,14 +197,17 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
         {status === 'polling' && (
           <div className="flex items-center justify-center gap-2 text-amber-400">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Aguardando verificação no seu telefone...</span>
+            <span>{t('verify_desktop_waiting')}</span>
           </div>
         )}
 
         <div className="text-white/40 text-sm">
-          <p>Não consegue escanear?</p>
-          <button className="text-amber-400 hover:underline mt-1">
-            Clique aqui para obter o link
+          <p>{t('verify_desktop_no_scan')}</p>
+          <button 
+            onClick={() => window.open(verificationData.link, '_blank')}
+            className="text-amber-400 hover:underline mt-1"
+          >
+            {t('verify_desktop_get_link')}
           </button>
         </div>
       </motion.div>

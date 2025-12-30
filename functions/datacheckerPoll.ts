@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.accessToken;
 
-    // Poll for results using transactionId as per documentation
-    const pollUrl = `${DATACHECKER_BASE_URL}/api/v2/poll?transactionId=${transactionId}`;
+    // Poll for all results (no transactionId query parameter)
+    const pollUrl = `${DATACHECKER_BASE_URL}/api/v2/poll`;
     console.log('🌐 Polling URL:', pollUrl);
     console.log('🔑 Using access token:', accessToken ? 'Present' : 'Missing');
     
@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
     });
 
     console.log('📡 Response status:', response.status);
-
     console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
@@ -82,22 +81,31 @@ Deno.serve(async (req) => {
     console.log('🔍 DataChecker RAW poll response:', JSON.stringify(data, null, 2));
     console.log('🔍 Response type:', typeof data);
     console.log('🔍 Response keys:', Object.keys(data));
-    console.log('🔍 Has completed property:', 'completed' in data);
-    console.log('🔍 Completed value:', data.completed);
-    console.log('🔍 Results field:', data.results);
-    console.log('🔍 Results type:', typeof data.results);
+    console.log('🔍 Results array:', data.results);
     console.log('🔍 Results length:', data.results?.length);
 
-    // Check completion based on the presence of the 'completed' timestamp (UTC string) or results
-    const isCompleted = !!data.completed || (data.results && data.results.length > 0);
-    const isEmpty = Object.keys(data).length === 0;
-    console.log('🔍 Response is empty (pending):', isEmpty);
-    console.log('🔍 Completed status:', isCompleted);
+    // Find the specific transaction in the results array
+    const transactionResult = data.results?.find(
+      r => r.transactionId === transactionId
+    );
 
+    console.log('🔍 Found transaction:', transactionResult ? 'Yes' : 'No');
+    console.log('🔍 Transaction result:', transactionResult);
+
+    if (!transactionResult) {
+      // Transaction not completed yet
+      return Response.json({
+        completed: false,
+        pending: true,
+        results: []
+      });
+    }
+
+    // Transaction is completed
     return Response.json({
-      completed: isCompleted,
-      pending: isEmpty,
-      results: data.results || [],
+      completed: true,
+      pending: false,
+      results: [transactionResult],
       rawData: data
     });
 

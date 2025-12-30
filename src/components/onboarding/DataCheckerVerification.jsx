@@ -52,12 +52,13 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       }
 
       console.log('✅ TransactionId received:', response.data.transactionId);
+      console.log('✅ SecureId received:', response.data.secureId);
       
       setVerificationData(response.data);
       setStatus('ready');
 
-      // Start polling after a short delay
-      setTimeout(() => startPolling(response.data.transactionId), 3000);
+      // Start polling after a short delay - try secureId first
+      setTimeout(() => startPolling(response.data.secureId || response.data.transactionId), 3000);
 
     } catch (err) {
       console.error('Verification initialization error:', err);

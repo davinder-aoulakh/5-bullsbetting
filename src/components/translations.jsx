@@ -98,6 +98,10 @@ export const translations = {
     onb_error_complete: 'Erro ao finalizar cadastro. Tente novamente.',
     onb_cpf_invalid: 'CPF inválido. Verifique os números digitados.',
     
+    // Verification modes
+    verify_sdk_mode: 'Modo SDK',
+    verify_link_mode: 'Modo Link',
+
     // Verification
     verify_initializing: 'Inicializando verificação...',
     verify_error_title: 'Erro na verificação',
@@ -222,6 +226,10 @@ export const translations = {
     onb_error_complete: 'Error completing registration. Please try again.',
     onb_cpf_invalid: 'Invalid CPF. Please check the numbers entered.',
     
+    // Verification modes
+    verify_sdk_mode: 'SDK Mode',
+    verify_link_mode: 'Link Mode',
+
     // Verification
     verify_initializing: 'Initializing verification...',
     verify_error_title: 'Verification Error',

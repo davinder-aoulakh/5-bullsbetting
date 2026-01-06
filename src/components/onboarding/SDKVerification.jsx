@@ -37,8 +37,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           console.error('❌ SDK loading timeout after 5 seconds');
           setError(
             language === 'pt' 
-              ? 'Os SDKs de verificação não estão disponíveis. Use o "Modo Link" para continuar.' 
-              : 'Verification SDKs are not available. Please use "Link Mode" to continue.'
+              ? 'Os SDKs de verificação não estão disponíveis. Por favor, recarregue a página.' 
+              : 'Verification SDKs are not available. Please reload the page.'
           );
           setStep('failed');
         }, 5000); // 5 second timeout
@@ -51,11 +51,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           return;
         }
 
-        console.log('📦 Loading AutoCapture SDK...');
-        // Try to load AutoCapture SDK
+        console.log('📦 Loading AutoCapture SDK from GitHub...');
+        // Try to load AutoCapture SDK from GitHub via jsdelivr
         if (!window.AutoCapture) {
           const acScript = document.createElement('script');
-          acScript.src = 'https://cdn.jsdelivr.net/npm/@datachecker/autocapture@latest/dist/autocapture.min.js';
+          acScript.src = 'https://cdn.jsdelivr.net/gh/datacheckerbv/AutoCapture@latest/dist/autocapture.min.js';
           acScript.async = true;
           document.head.appendChild(acScript);
           
@@ -74,16 +74,16 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             acScript.onerror = (e) => {
               console.error('❌ AutoCapture script error:', e);
               clearTimeout(scriptTimeout);
-              reject(new Error('AutoCapture load failed - script not found'));
+              reject(new Error('AutoCapture load failed'));
             };
           });
         }
 
-        console.log('📦 Loading FaceVerify SDK...');
-        // Try to load FaceVerify SDK
+        console.log('📦 Loading FaceVerify SDK from GitHub...');
+        // Try to load FaceVerify SDK from GitHub via jsdelivr
         if (!window.FaceVerify) {
           const fvScript = document.createElement('script');
-          fvScript.src = 'https://cdn.jsdelivr.net/npm/@datachecker/faceverify@latest/dist/faceverify.min.js';
+          fvScript.src = 'https://cdn.jsdelivr.net/gh/datacheckerbv/FaceVerify@latest/dist/faceverify.min.js';
           fvScript.async = true;
           document.head.appendChild(fvScript);
           
@@ -102,7 +102,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             fvScript.onerror = (e) => {
               console.error('❌ FaceVerify script error:', e);
               clearTimeout(scriptTimeout);
-              reject(new Error('FaceVerify load failed - script not found'));
+              reject(new Error('FaceVerify load failed'));
             };
           });
         }
@@ -745,18 +745,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         </h3>
         <p className="text-white/60 mb-4">{error}</p>
         
-        {isSDKLoadError && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
-            <p className="text-amber-400 text-sm font-medium mb-2">
-              💡 {language === 'pt' ? 'Solução Alternativa' : 'Alternative Solution'}
-            </p>
-            <p className="text-white/70 text-sm">
-              {language === 'pt'
-                ? 'Use o botão "Modo Link" acima para fazer a verificação através de um link externo.'
-                : 'Use the "Link Mode" button above to verify through an external link.'}
-            </p>
-          </div>
-        )}
+
         
         {!isSDKLoadError && retryCount < 3 && (
           <Button onClick={handleRetry} className="gold-gradient text-black">

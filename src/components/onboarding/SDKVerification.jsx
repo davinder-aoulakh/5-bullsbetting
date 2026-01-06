@@ -27,29 +27,31 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   // Load DataChecker SDKs from CDN
   useEffect(() => {
+    console.log('🔄 Starting SDK load process...');
+    let timeoutId;
+    
     const loadSDKs = async () => {
       try {
         // Set a timeout to detect if SDKs fail to load
-        const loadTimeout = setTimeout(() => {
-          if (!sdkLoaded) {
-            console.error('❌ SDK loading timeout');
-            setError(
-              language === 'pt' 
-                ? 'Os SDKs de verificação não estão disponíveis. Use o "Modo Link" para continuar.' 
-                : 'Verification SDKs are not available. Please use "Link Mode" to continue.'
-            );
-            setStep('failed');
-          }
-        }, 10000); // 10 second timeout
+        timeoutId = setTimeout(() => {
+          console.error('❌ SDK loading timeout after 5 seconds');
+          setError(
+            language === 'pt' 
+              ? 'Os SDKs de verificação não estão disponíveis. Use o "Modo Link" para continuar.' 
+              : 'Verification SDKs are not available. Please use "Link Mode" to continue.'
+          );
+          setStep('failed');
+        }, 5000); // 5 second timeout
 
         // Check if SDKs are already loaded
         if (window.AutoCapture && window.FaceVerify) {
           console.log('✅ DataChecker SDKs already loaded');
-          clearTimeout(loadTimeout);
+          clearTimeout(timeoutId);
           setSdkLoaded(true);
           return;
         }
 
+        console.log('📦 Loading AutoCapture SDK...');
         // Try to load AutoCapture SDK
         if (!window.AutoCapture) {
           const acScript = document.createElement('script');
@@ -58,18 +60,26 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           document.head.appendChild(acScript);
           
           await new Promise((resolve, reject) => {
-            const scriptTimeout = setTimeout(() => reject(new Error('AutoCapture load timeout')), 8000);
+            const scriptTimeout = setTimeout(() => {
+              console.error('❌ AutoCapture script timeout');
+              reject(new Error('AutoCapture load timeout'));
+            }, 4000);
+            
             acScript.onload = () => {
+              console.log('✅ AutoCapture script loaded');
               clearTimeout(scriptTimeout);
               resolve();
             };
-            acScript.onerror = () => {
+            
+            acScript.onerror = (e) => {
+              console.error('❌ AutoCapture script error:', e);
               clearTimeout(scriptTimeout);
-              reject(new Error('AutoCapture load failed'));
+              reject(new Error('AutoCapture load failed - script not found'));
             };
           });
         }
 
+        console.log('📦 Loading FaceVerify SDK...');
         // Try to load FaceVerify SDK
         if (!window.FaceVerify) {
           const fvScript = document.createElement('script');
@@ -78,33 +88,45 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           document.head.appendChild(fvScript);
           
           await new Promise((resolve, reject) => {
-            const scriptTimeout = setTimeout(() => reject(new Error('FaceVerify load timeout')), 8000);
+            const scriptTimeout = setTimeout(() => {
+              console.error('❌ FaceVerify script timeout');
+              reject(new Error('FaceVerify load timeout'));
+            }, 4000);
+            
             fvScript.onload = () => {
+              console.log('✅ FaceVerify script loaded');
               clearTimeout(scriptTimeout);
               resolve();
             };
-            fvScript.onerror = () => {
+            
+            fvScript.onerror = (e) => {
+              console.error('❌ FaceVerify script error:', e);
               clearTimeout(scriptTimeout);
-              reject(new Error('FaceVerify load failed'));
+              reject(new Error('FaceVerify load failed - script not found'));
             };
           });
         }
 
-        console.log('✅ DataChecker SDKs loaded');
-        clearTimeout(loadTimeout);
+        console.log('✅ All DataChecker SDKs loaded successfully');
+        clearTimeout(timeoutId);
         setSdkLoaded(true);
       } catch (err) {
-        console.error('❌ Failed to load SDKs:', err);
+        console.error('❌ Failed to load SDKs:', err.message);
+        clearTimeout(timeoutId);
         setError(
           language === 'pt' 
-            ? 'Não foi possível carregar os SDKs de verificação. Use o "Modo Link" para continuar.' 
-            : 'Failed to load verification SDKs. Please use "Link Mode" to continue.'
+            ? 'SDKs de verificação não disponíveis. Use o "Modo Link".' 
+            : 'Verification SDKs unavailable. Use "Link Mode".'
         );
         setStep('failed');
       }
     };
 
     loadSDKs();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [language]);
 
   // Portuguese translations for SDK
@@ -650,9 +672,13 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   // Auto-start verification when SDKs are loaded
   useEffect(() => {
+    console.log('🔍 SDK loaded:', sdkLoaded, 'Step:', step, 'isMobile:', isMobile);
+    
     if (sdkLoaded && step === 'init') {
+      console.log('🚀 SDKs loaded, starting verification flow...');
+      
       if (!isMobile) {
-        // Desktop: create session and show QR code
+        console.log('💻 Desktop detected - creating QR code session');
         createVerificationSession();
       } else {
         // Mobile: check if session ID exists, otherwise start capture
@@ -660,12 +686,14 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         const sessionIdFromUrl = urlParams.get('verificationSession');
         
         if (!sessionIdFromUrl) {
-          // Direct mobile access without session - start capture
+          console.log('📱 Direct mobile access - starting camera capture');
           startIDCapture();
+        } else {
+          console.log('📱 Mobile with session - already handled by session load');
         }
       }
     }
-  }, [sdkLoaded, step]);
+  }, [sdkLoaded, step, isMobile]);
 
   if (!sdkLoaded || step === 'init') {
     return (
@@ -699,6 +727,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   }
 
   if (step === 'failed') {
+    const isSDKLoadError = error && (
+      error.includes('SDK') || 
+      error.includes('unavailable') || 
+      error.includes('não disponíveis')
+    );
+    
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -710,16 +744,31 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           {language === 'pt' ? 'Verificação Falhou' : 'Verification Failed'}
         </h3>
         <p className="text-white/60 mb-4">{error}</p>
-        {retryCount < 3 && (
+        
+        {isSDKLoadError && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
+            <p className="text-amber-400 text-sm font-medium mb-2">
+              💡 {language === 'pt' ? 'Solução Alternativa' : 'Alternative Solution'}
+            </p>
+            <p className="text-white/70 text-sm">
+              {language === 'pt'
+                ? 'Use o botão "Modo Link" acima para fazer a verificação através de um link externo.'
+                : 'Use the "Link Mode" button above to verify through an external link.'}
+            </p>
+          </div>
+        )}
+        
+        {!isSDKLoadError && retryCount < 3 && (
           <Button onClick={handleRetry} className="gold-gradient text-black">
             {language === 'pt' ? 'Tentar Novamente' : 'Try Again'}
           </Button>
         )}
+        
         {retryCount >= 3 && (
           <p className="text-white/40 text-sm mt-4">
             {language === 'pt' 
-              ? 'Muitas tentativas. Entre em contato com o suporte.' 
-              : 'Too many attempts. Please contact support.'}
+              ? 'Muitas tentativas. Use o "Modo Link" ou contate o suporte.' 
+              : 'Too many attempts. Use "Link Mode" or contact support.'}
           </p>
         )}
       </motion.div>

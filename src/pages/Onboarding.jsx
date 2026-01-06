@@ -29,6 +29,7 @@ import DocumentTypeSelector from '@/components/onboarding/DocumentTypeSelector';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
 import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
+import SDKVerification from '@/components/onboarding/SDKVerification';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function Onboarding() {
@@ -78,6 +79,7 @@ export default function Onboarding() {
   
   const [kycPassed, setKycPassed] = useState(false);
   const [idvCompleted, setIdvCompleted] = useState(false);
+  const [useSDKVerification, setUseSDKVerification] = useState(true); // Toggle between SDK and Link modes
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -313,16 +315,30 @@ export default function Onboarding() {
         // Login automatically after registration
         await base44.auth.signIn({ email, password });
         
-        // Store verification log
+        // Store verification logs
         const user = await base44.auth.me();
+        
+        // Log ID verification
         await base44.entities.VerificationLog.create({
           user_id: user.id,
           verification_type: 'id_document',
           provider: 'datachecker',
-          reference_id: result.transactionId,
+          reference_id: result.idTransactionId || result.transactionId,
           status: 'passed',
-          result_details: result.result
+          result_details: result.idResult || result.result
         });
+
+        // Log face verification if SDK mode
+        if (result.faceTransactionId) {
+          await base44.entities.VerificationLog.create({
+            user_id: user.id,
+            verification_type: 'facial_recognition',
+            provider: 'datachecker',
+            reference_id: result.faceTransactionId,
+            status: 'passed',
+            result_details: result.faceResult
+          });
+        }
 
         setIdvCompleted(true);
       } catch (err) {
@@ -671,11 +687,39 @@ export default function Onboarding() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <DataCheckerVerification
-                    onComplete={handleIDVComplete}
-                    isMobile={isMobile}
-                    userData={{ ...userData, email, phone }}
-                  />
+                  {/* Mode toggle for testing */}
+                  <div className="flex justify-center gap-2 mb-4">
+                    <Button
+                      variant={useSDKVerification ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setUseSDKVerification(true)}
+                      className={useSDKVerification ? 'gold-gradient text-black' : 'text-white/60'}
+                    >
+                      {t('verify_sdk_mode')}
+                    </Button>
+                    <Button
+                      variant={!useSDKVerification ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setUseSDKVerification(false)}
+                      className={!useSDKVerification ? 'gold-gradient text-black' : 'text-white/60'}
+                    >
+                      {t('verify_link_mode')}
+                    </Button>
+                  </div>
+
+                  {useSDKVerification ? (
+                    <SDKVerification
+                      onComplete={handleIDVComplete}
+                      isMobile={isMobile}
+                      userData={{ ...userData, email, phone }}
+                    />
+                  ) : (
+                    <DataCheckerVerification
+                      onComplete={handleIDVComplete}
+                      isMobile={isMobile}
+                      userData={{ ...userData, email, phone }}
+                    />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

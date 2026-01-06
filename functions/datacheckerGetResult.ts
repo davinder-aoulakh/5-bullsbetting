@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
   try {

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
   try {
@@ -13,6 +14,21 @@ Deno.serve(async (req) => {
       return Response.json({ 
         error: 'transactionId is required' 
       }, { status: 400 });
+    }
+
+    if (USE_MOCK) {
+      // Return mock completed response
+      console.log('🎭 Using mock API - returning completed status');
+      return Response.json({
+        completed: true,
+        pending: false,
+        results: [{
+          resultId: 'mock-result-' + Date.now(),
+          transactionId: transactionId,
+          product: 'IDV_PREMIUM',
+          completed: new Date().toISOString()
+        }]
+      });
     }
 
     // Get access token directly

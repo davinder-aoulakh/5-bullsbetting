@@ -79,7 +79,7 @@ export default function Onboarding() {
   
   const [kycPassed, setKycPassed] = useState(false);
   const [idvCompleted, setIdvCompleted] = useState(false);
-  const [useSDKVerification, setUseSDKVerification] = useState(true); // Toggle between SDK and Link modes
+  const [useSDKVerification, setUseSDKVerification] = useState(false); // Toggle between SDK and Link modes - default to Link as SDKs are unavailable
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -687,24 +687,34 @@ export default function Onboarding() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  {/* Mode toggle for testing */}
-                  <div className="flex justify-center gap-2 mb-4">
-                    <Button
-                      variant={useSDKVerification ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setUseSDKVerification(true)}
-                      className={useSDKVerification ? 'gold-gradient text-black' : 'text-white/60'}
-                    >
-                      {t('verify_sdk_mode')}
-                    </Button>
-                    <Button
-                      variant={!useSDKVerification ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setUseSDKVerification(false)}
-                      className={!useSDKVerification ? 'gold-gradient text-black' : 'text-white/60'}
-                    >
-                      {t('verify_link_mode')}
-                    </Button>
+                  {/* Mode toggle - SDK disabled as libraries unavailable */}
+                  <div className="space-y-3 mb-6">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                      <p className="text-amber-400 text-xs font-medium mb-1">
+                        ℹ️ {t('verify_sdk_mode')} (Unavailable)
+                      </p>
+                      <p className="text-white/60 text-xs">
+                        DataChecker SDK libraries are not publicly available. Link mode uses DataChecker's hosted verification.
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="text-white/30 cursor-not-allowed"
+                      >
+                        {t('verify_sdk_mode')} ✗
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="gold-gradient text-black"
+                      >
+                        {t('verify_link_mode')} ✓
+                      </Button>
+                    </div>
                   </div>
 
                   {useSDKVerification ? (

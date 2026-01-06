@@ -25,7 +25,28 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   useEffect(() => {
     const loadSDKs = async () => {
       try {
-        // Load AutoCapture SDK
+        // Set a timeout to detect if SDKs fail to load
+        const loadTimeout = setTimeout(() => {
+          if (!sdkLoaded) {
+            console.error('❌ SDK loading timeout');
+            setError(
+              language === 'pt' 
+                ? 'Os SDKs de verificação não estão disponíveis. Use o "Modo Link" para continuar.' 
+                : 'Verification SDKs are not available. Please use "Link Mode" to continue.'
+            );
+            setStep('failed');
+          }
+        }, 10000); // 10 second timeout
+
+        // Check if SDKs are already loaded
+        if (window.AutoCapture && window.FaceVerify) {
+          console.log('✅ DataChecker SDKs already loaded');
+          clearTimeout(loadTimeout);
+          setSdkLoaded(true);
+          return;
+        }
+
+        // Try to load AutoCapture SDK
         if (!window.AutoCapture) {
           const acScript = document.createElement('script');
           acScript.src = 'https://cdn.jsdelivr.net/npm/@datachecker/autocapture@latest/dist/autocapture.min.js';
@@ -33,12 +54,19 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           document.head.appendChild(acScript);
           
           await new Promise((resolve, reject) => {
-            acScript.onload = resolve;
-            acScript.onerror = reject;
+            const scriptTimeout = setTimeout(() => reject(new Error('AutoCapture load timeout')), 8000);
+            acScript.onload = () => {
+              clearTimeout(scriptTimeout);
+              resolve();
+            };
+            acScript.onerror = () => {
+              clearTimeout(scriptTimeout);
+              reject(new Error('AutoCapture load failed'));
+            };
           });
         }
 
-        // Load FaceVerify SDK
+        // Try to load FaceVerify SDK
         if (!window.FaceVerify) {
           const fvScript = document.createElement('script');
           fvScript.src = 'https://cdn.jsdelivr.net/npm/@datachecker/faceverify@latest/dist/faceverify.min.js';
@@ -46,22 +74,34 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           document.head.appendChild(fvScript);
           
           await new Promise((resolve, reject) => {
-            fvScript.onload = resolve;
-            fvScript.onerror = reject;
+            const scriptTimeout = setTimeout(() => reject(new Error('FaceVerify load timeout')), 8000);
+            fvScript.onload = () => {
+              clearTimeout(scriptTimeout);
+              resolve();
+            };
+            fvScript.onerror = () => {
+              clearTimeout(scriptTimeout);
+              reject(new Error('FaceVerify load failed'));
+            };
           });
         }
 
         console.log('✅ DataChecker SDKs loaded');
+        clearTimeout(loadTimeout);
         setSdkLoaded(true);
       } catch (err) {
         console.error('❌ Failed to load SDKs:', err);
-        setError('Failed to load verification tools. Please refresh and try again.');
+        setError(
+          language === 'pt' 
+            ? 'Não foi possível carregar os SDKs de verificação. Use o "Modo Link" para continuar.' 
+            : 'Failed to load verification SDKs. Please use "Link Mode" to continue.'
+        );
         setStep('failed');
       }
     };
 
     loadSDKs();
-  }, []);
+  }, [language]);
 
   // Portuguese translations for SDK
   const getSDKTranslations = () => {

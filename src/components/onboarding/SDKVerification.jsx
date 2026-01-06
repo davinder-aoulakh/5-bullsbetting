@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, XCircle, Camera, AlertCircle, Smartphone } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Camera, AlertCircle, Smartphone, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function SDKVerification({ onComplete, userData, isMobile }) {
   const { t, language } = useLanguage();
-  const [step, setStep] = useState('init'); // init, id_capture, id_processing, face_capture, face_processing, verifying, success, failed
+  const [step, setStep] = useState('init'); // init, qr_display (desktop), id_capture, id_processing, face_capture, face_processing, verifying, success, failed
   const [error, setError] = useState('');
   const [idTransactionId, setIdTransactionId] = useState(null);
   const [faceTransactionId, setFaceTransactionId] = useState(null);
@@ -15,11 +15,15 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const [faceImages, setFaceImages] = useState([]);
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [sessionId, setSessionId] = useState(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [verificationUrl, setVerificationUrl] = useState(null);
   
   const acContainerRef = useRef(null);
   const fvContainerRef = useRef(null);
   const acInstanceRef = useRef(null);
   const fvInstanceRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
   // Load DataChecker SDKs from CDN
   useEffect(() => {
@@ -460,16 +464,36 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       const idApproved = idResult.data.approved;
       const faceApproved = faceResult.data.approved;
 
+      const resultData = {
+        verified: idApproved && faceApproved,
+        idTransactionId,
+        faceTransactionId,
+        idResult: idResult.data,
+        faceResult: faceResult.data
+      };
+
+      // If this is a session-based verification, update the session
+      if (sessionId) {
+        try {
+          const sessions = await base44.entities.VerificationSession.filter({
+            session_id: sessionId
+          });
+          
+          if (sessions && sessions.length > 0) {
+            await base44.entities.VerificationSession.update(sessions[0].id, {
+              status: idApproved && faceApproved ? 'completed' : 'failed',
+              result: resultData
+            });
+          }
+        } catch (err) {
+          console.error('❌ Failed to update session:', err);
+        }
+      }
+
       if (idApproved && faceApproved) {
         setStep('success');
         setTimeout(() => {
-          onComplete({
-            verified: true,
-            idTransactionId,
-            faceTransactionId,
-            idResult: idResult.data,
-            faceResult: faceResult.data
-          });
+          onComplete(resultData);
         }, 2000);
       } else {
         setStep('failed');
@@ -497,10 +521,149 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     setFaceImages([]);
   };
 
+  // Check for session ID in URL (mobile flow)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionIdFromUrl = urlParams.get('verificationSession');
+    
+    if (sessionIdFromUrl) {
+      // Mobile device - load session and start verification
+      setSessionId(sessionIdFromUrl);
+      loadSessionAndVerify(sessionIdFromUrl);
+    }
+  }, []);
+
+  // Create verification session for desktop (QR code flow)
+  const createVerificationSession = async () => {
+    try {
+      const sessionData = {
+        session_id: `sdk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        user_data: userData,
+        verification_mode: 'sdk',
+        status: 'pending',
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min expiry
+      };
+
+      await base44.entities.VerificationSession.create(sessionData);
+      setSessionId(sessionData.session_id);
+
+      // Create verification URL for mobile
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}${window.location.pathname}?verificationSession=${sessionData.session_id}`;
+      setVerificationUrl(url);
+
+      // Generate QR code using an API
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+      setQrCodeUrl(qrUrl);
+
+      setStep('qr_display');
+      
+      // Start polling for session completion
+      startSessionPolling(sessionData.session_id);
+
+    } catch (err) {
+      console.error('❌ Failed to create verification session:', err);
+      setError('Failed to create verification session');
+      setStep('failed');
+    }
+  };
+
+  // Load session data and start verification (mobile flow)
+  const loadSessionAndVerify = async (sessionIdParam) => {
+    try {
+      const sessions = await base44.entities.VerificationSession.filter({
+        session_id: sessionIdParam,
+        status: 'pending'
+      });
+
+      if (!sessions || sessions.length === 0) {
+        throw new Error('Session not found or expired');
+      }
+
+      const session = sessions[0];
+      
+      // Update session status
+      await base44.entities.VerificationSession.update(session.id, {
+        status: 'in_progress'
+      });
+
+      // Wait for SDKs to load, then start verification
+      if (sdkLoaded) {
+        startIDCapture();
+      }
+    } catch (err) {
+      console.error('❌ Failed to load session:', err);
+      setError('Invalid or expired verification session');
+      setStep('failed');
+    }
+  };
+
+  // Poll for session completion (desktop flow)
+  const startSessionPolling = (sessionIdParam) => {
+    let attempts = 0;
+    const maxAttempts = 120; // 10 minutes
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        attempts++;
+
+        const sessions = await base44.entities.VerificationSession.filter({
+          session_id: sessionIdParam
+        });
+
+        if (sessions && sessions.length > 0) {
+          const session = sessions[0];
+
+          if (session.status === 'completed') {
+            clearInterval(pollIntervalRef.current);
+            setStep('success');
+            
+            setTimeout(() => {
+              onComplete(session.result || { verified: true });
+            }, 2000);
+          } else if (session.status === 'failed') {
+            clearInterval(pollIntervalRef.current);
+            setStep('failed');
+            setError('Verification failed on mobile device');
+          }
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollIntervalRef.current);
+          setError('Verification timeout - session expired');
+          setStep('failed');
+        }
+      } catch (err) {
+        console.error('❌ Session polling error:', err);
+      }
+    }, 5000);
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Auto-start verification when SDKs are loaded
   useEffect(() => {
     if (sdkLoaded && step === 'init') {
-      startIDCapture();
+      if (!isMobile) {
+        // Desktop: create session and show QR code
+        createVerificationSession();
+      } else {
+        // Mobile: check if session ID exists, otherwise start capture
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionIdFromUrl = urlParams.get('verificationSession');
+        
+        if (!sessionIdFromUrl) {
+          // Direct mobile access without session - start capture
+          startIDCapture();
+        }
+      }
     }
   }, [sdkLoaded, step]);
 
@@ -633,6 +796,68 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           {language === 'pt' ? 'Isso pode levar alguns segundos' : 'This may take a few seconds'}
         </p>
       </div>
+    );
+  }
+
+  // Desktop QR Code display
+  if (step === 'qr_display') {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center space-y-6"
+      >
+        <div className="mb-6">
+          <Smartphone className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">
+            {language === 'pt' ? 'Escaneie com seu Celular' : 'Scan with Your Phone'}
+          </h3>
+          <p className="text-white/60">
+            {language === 'pt' 
+              ? 'Use a câmera do seu celular para escanear o código QR e continuar a verificação.' 
+              : 'Use your phone camera to scan the QR code and continue verification.'}
+          </p>
+        </div>
+
+        {/* QR Code */}
+        {qrCodeUrl && (
+          <div className="bg-white p-6 rounded-xl mx-auto inline-block">
+            <img
+              src={qrCodeUrl}
+              alt="QR Code for verification"
+              className="w-64 h-64"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-center gap-2 text-amber-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">
+            {language === 'pt' 
+              ? 'Aguardando verificação no celular...' 
+              : 'Waiting for verification on phone...'}
+          </span>
+        </div>
+
+        <div className="text-white/40 text-sm space-y-2">
+          <p>
+            {language === 'pt' 
+              ? 'Não consegue escanear?' 
+              : "Can't scan?"}
+          </p>
+          <button 
+            onClick={() => {
+              if (verificationUrl) {
+                navigator.clipboard.writeText(verificationUrl);
+                alert(language === 'pt' ? 'Link copiado!' : 'Link copied!');
+              }
+            }}
+            className="text-amber-400 hover:underline"
+          >
+            {language === 'pt' ? 'Copiar link de verificação' : 'Copy verification link'}
+          </button>
+        </div>
+      </motion.div>
     );
   }
 

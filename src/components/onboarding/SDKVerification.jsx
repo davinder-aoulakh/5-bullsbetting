@@ -435,18 +435,21 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         faceResult: faceResult.data
       };
 
-      // If this is a session-based verification, update the session
+      // If this is a session-based verification, update the session (if user authenticated)
       if (sessionId) {
         try {
-          const sessions = await base44.entities.VerificationSession.filter({
-            session_id: sessionId
-          });
-          
-          if (sessions && sessions.length > 0) {
-            await base44.entities.VerificationSession.update(sessions[0].id, {
-              status: idApproved && faceApproved ? 'completed' : 'failed',
-              result: resultData
+          const isAuth = await base44.auth.isAuthenticated();
+          if (isAuth) {
+            const sessions = await base44.entities.VerificationSession.filter({
+              session_id: sessionId
             });
+            
+            if (sessions && sessions.length > 0) {
+              await base44.entities.VerificationSession.update(sessions[0].id, {
+                status: idApproved && faceApproved ? 'completed' : 'failed',
+                result: resultData
+              });
+            }
           }
         } catch (err) {
           console.error('❌ Failed to update session:', err);
@@ -495,7 +498,13 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min expiry
       };
 
-      await base44.entities.VerificationSession.create(sessionData);
+      // Try to create session, but don't fail if user is not authenticated
+      try {
+        await base44.entities.VerificationSession.create(sessionData);
+      } catch (err) {
+        console.warn('⚠️ Could not create session (user not authenticated):', err);
+        // Continue anyway - session is optional for onboarding
+      }
       setSessionId(sessionData.session_id);
 
       // Create verification URL for mobile
@@ -537,16 +546,19 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         throw new Error('Session data not loaded properly. Please scan the QR code again.');
       }
       
-      // Update session status to in_progress
+      // Update session status to in_progress (if user authenticated)
       try {
-        const sessions = await base44.entities.VerificationSession.filter({
-          session_id: sessionIdParam
-        });
-        
-        if (sessions && sessions.length > 0) {
-          await base44.entities.VerificationSession.update(sessions[0].id, {
-            status: 'in_progress'
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          const sessions = await base44.entities.VerificationSession.filter({
+            session_id: sessionIdParam
           });
+          
+          if (sessions && sessions.length > 0) {
+            await base44.entities.VerificationSession.update(sessions[0].id, {
+              status: 'in_progress'
+            });
+          }
         }
       } catch (sessionError) {
         console.warn('⚠️ Could not update session status:', sessionError);
@@ -572,24 +584,28 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       try {
         attempts++;
 
-        const sessions = await base44.entities.VerificationSession.filter({
-          session_id: sessionIdParam
-        });
+        // Check if user is authenticated before querying sessions
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          const sessions = await base44.entities.VerificationSession.filter({
+            session_id: sessionIdParam
+          });
 
-        if (sessions && sessions.length > 0) {
-          const session = sessions[0];
+          if (sessions && sessions.length > 0) {
+            const session = sessions[0];
 
-          if (session.status === 'completed') {
-            clearInterval(pollIntervalRef.current);
-            setStep('success');
-            
-            setTimeout(() => {
-              onComplete(session.result || { verified: true });
-            }, 2000);
-          } else if (session.status === 'failed') {
-            clearInterval(pollIntervalRef.current);
-            setStep('failed');
-            setError('Verification failed on mobile device');
+            if (session.status === 'completed') {
+              clearInterval(pollIntervalRef.current);
+              setStep('success');
+              
+              setTimeout(() => {
+                onComplete(session.result || { verified: true });
+              }, 2000);
+            } else if (session.status === 'failed') {
+              clearInterval(pollIntervalRef.current);
+              setStep('failed');
+              setError('Verification failed on mobile device');
+            }
           }
         }
 

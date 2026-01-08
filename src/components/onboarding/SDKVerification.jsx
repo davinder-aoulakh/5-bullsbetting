@@ -489,43 +489,39 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     }
   };
 
-  // Load session data and start verification (mobile flow from QR code)
-  const loadSessionAndVerify = async (sessionIdParam) => {
+  // Start verification for QR code scan (userData already loaded by parent)
+  const startQRVerification = async (sessionIdParam) => {
     try {
-      console.log('📱 Loading session for mobile verification:', sessionIdParam);
+      console.log('📱 Starting QR code verification with session:', sessionIdParam);
+      console.log('📋 Using userData from parent:', userData);
       
-      const sessions = await base44.entities.VerificationSession.filter({
-        session_id: sessionIdParam
-      });
-
-      if (!sessions || sessions.length === 0) {
-        throw new Error('Verification session not found. The QR code may be invalid or expired.');
-      }
-
-      const session = sessions[0];
-      console.log('✅ Session found, status:', session.status);
-      
-      // Validate session expiry
-      if (session.expires_at && new Date(session.expires_at) < new Date()) {
-        throw new Error('Verification session has expired. Please scan a new QR code.');
+      // Validate that we have the required userData
+      if (!userData || !userData.country || !userData.full_name) {
+        throw new Error('Session data not loaded properly. Please scan the QR code again.');
       }
       
-      // Only proceed if session is pending or in_progress
-      if (session.status !== 'pending' && session.status !== 'in_progress') {
-        throw new Error('This verification session has already been completed.');
+      // Update session status to in_progress
+      try {
+        const sessions = await base44.entities.VerificationSession.filter({
+          session_id: sessionIdParam
+        });
+        
+        if (sessions && sessions.length > 0) {
+          await base44.entities.VerificationSession.update(sessions[0].id, {
+            status: 'in_progress'
+          });
+        }
+      } catch (sessionError) {
+        console.warn('⚠️ Could not update session status:', sessionError);
+        // Continue anyway as this is not critical
       }
-      
-      // Update session status
-      await base44.entities.VerificationSession.update(session.id, {
-        status: 'in_progress'
-      });
 
-      // Start verification immediately - userData was already loaded by Onboarding page
+      // Start verification with userData from parent
       console.log('🎬 Starting ID capture with userData:', userData);
       await startIDCapture();
     } catch (err) {
-      console.error('❌ Failed to load session:', err);
-      setError(err.message || 'Invalid or expired verification session. Please scan a new QR code.');
+      console.error('❌ Failed to start QR verification:', err);
+      setError(err.message || 'Failed to start verification. Please scan the QR code again.');
       setStep('failed');
     }
   };
@@ -589,10 +585,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       const sessionIdFromUrl = urlParams.get('verificationSession');
       
       if (sessionIdFromUrl) {
-        // Mobile QR code scan - session was already loaded by Onboarding page
-        console.log('📱 QR code scan detected - loading session and starting verification');
+        // Mobile QR code scan - userData already loaded by Onboarding page
+        console.log('📱 QR code scan detected - userData already loaded by parent');
         setSessionId(sessionIdFromUrl);
-        loadSessionAndVerify(sessionIdFromUrl);
+        startQRVerification(sessionIdFromUrl);
       } else if (!isMobile) {
         // Desktop - create QR code
         console.log('💻 Desktop detected - creating QR code session');

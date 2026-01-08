@@ -92,6 +92,72 @@ export default function Onboarding() {
     { label: 'Verification' },
   ];
 
+  // Check for verification session in URL (mobile QR code scan)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('verificationSession');
+    
+    if (sessionId) {
+      // Load session data and jump to step 6
+      loadSessionData(sessionId);
+    }
+  }, []);
+
+  const loadSessionData = async (sessionId) => {
+    try {
+      setLoading(true);
+      
+      // Fetch the session to get user data
+      const sessions = await base44.entities.VerificationSession.filter({
+        session_id: sessionId
+      });
+      
+      if (sessions && sessions.length > 0) {
+        const session = sessions[0];
+        const sessionUserData = session.user_data;
+        
+        // Populate form data from session
+        setUserData(sessionUserData);
+        setFullName(sessionUserData.full_name || '');
+        setDateOfBirth(sessionUserData.date_of_birth || '');
+        setSelectedCountry(sessionUserData.country || '');
+        setEmail(sessionUserData.email || '');
+        setPhone(sessionUserData.phone || '');
+        
+        // Set document data
+        if (sessionUserData.country === 'BR') {
+          setCpf(sessionUserData.cpf || '');
+          setCpfValid(true);
+        } else {
+          setDocumentType(sessionUserData.id_type || '');
+          if (sessionUserData.id_type === 'passport') {
+            setPassport(sessionUserData.id_value || '');
+            setPassportValid(true);
+          } else if (sessionUserData.id_type === 'driver_license') {
+            setDriverLicense(sessionUserData.id_value || '');
+            setLicenseValid(true);
+          } else if (sessionUserData.id_type === 'sedula') {
+            setSedula(sessionUserData.id_value || '');
+            setSedulaValid(true);
+          }
+        }
+        
+        // Mark previous steps as completed
+        setKycPassed(true);
+        setTermsAccepted(true);
+        setPrivacyAccepted(true);
+        
+        // Jump to verification step
+        setCurrentStep(6);
+      }
+    } catch (err) {
+      console.error('❌ Failed to load session:', err);
+      setError('Failed to load verification session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // CPF validation
   const validateCPF = (cpfValue) => {
     const digits = cpfValue.replace(/\D/g, '');

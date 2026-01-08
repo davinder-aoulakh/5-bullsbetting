@@ -441,18 +441,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     setFaceImages([]);
   };
 
-  // Check for session ID in URL (mobile flow)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionIdFromUrl = urlParams.get('verificationSession');
-    
-    if (sessionIdFromUrl) {
-      // Mobile device - load session and start verification
-      setSessionId(sessionIdFromUrl);
-      loadSessionAndVerify(sessionIdFromUrl);
-    }
-  }, []);
-
   // Create verification session for desktop (QR code flow)
   const createVerificationSession = async () => {
     try {
@@ -495,12 +483,13 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     }
   };
 
-  // Load session data and start verification (mobile flow)
+  // Load session data and start verification (mobile flow from QR code)
   const loadSessionAndVerify = async (sessionIdParam) => {
     try {
+      console.log('📱 Loading session for mobile verification:', sessionIdParam);
+      
       const sessions = await base44.entities.VerificationSession.filter({
-        session_id: sessionIdParam,
-        status: 'pending'
+        session_id: sessionIdParam
       });
 
       if (!sessions || sessions.length === 0) {
@@ -508,17 +497,24 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       }
 
       const session = sessions[0];
+      console.log('✅ Session found, status:', session.status);
+      
+      // Only proceed if session is pending or in_progress
+      if (session.status !== 'pending' && session.status !== 'in_progress') {
+        throw new Error('Session already completed or expired');
+      }
       
       // Update session status
       await base44.entities.VerificationSession.update(session.id, {
         status: 'in_progress'
       });
 
-      // Start verification
-      startIDCapture();
+      // Start verification immediately - userData was already loaded by Onboarding page
+      console.log('🎬 Starting ID capture with userData:', userData);
+      await startIDCapture();
     } catch (err) {
       console.error('❌ Failed to load session:', err);
-      setError('Invalid or expired verification session');
+      setError(err.message || 'Invalid or expired verification session');
       setStep('failed');
     }
   };
@@ -575,21 +571,25 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   // Auto-start verification when component mounts
   useEffect(() => {
-    console.log('🚀 Starting verification flow...');
+    console.log('🚀 Starting verification flow...', { step, isMobile, userData });
     
     if (step === 'init') {
-      if (!isMobile) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionIdFromUrl = urlParams.get('verificationSession');
+      
+      if (sessionIdFromUrl) {
+        // Mobile QR code scan - session was already loaded by Onboarding page
+        console.log('📱 QR code scan detected - loading session and starting verification');
+        setSessionId(sessionIdFromUrl);
+        loadSessionAndVerify(sessionIdFromUrl);
+      } else if (!isMobile) {
+        // Desktop - create QR code
         console.log('💻 Desktop detected - creating QR code session');
         createVerificationSession();
       } else {
-        // Mobile: check if session ID exists, otherwise start capture
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionIdFromUrl = urlParams.get('verificationSession');
-        
-        if (!sessionIdFromUrl) {
-          console.log('📱 Direct mobile access - starting camera capture');
-          startIDCapture();
-        }
+        // Direct mobile access (no QR code)
+        console.log('📱 Direct mobile access - starting camera capture');
+        startIDCapture();
       }
     }
   }, [step, isMobile]);

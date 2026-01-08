@@ -565,9 +565,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         setSessionId(sessionIdFromUrl);
         startQRVerification(sessionIdFromUrl);
       } else if (!isMobile) {
-        // Desktop - create QR code
-        console.log('💻 Desktop detected - creating QR code session');
-        createVerificationSession();
+        // Desktop - QR code flow not available during onboarding (no user/session storage)
+        // User must complete verification on the same device
+        console.log('💻 Desktop detected - starting direct verification (QR not available during onboarding)');
+        startIDCapture();
       } else {
         // Direct mobile access (no QR code)
         console.log('📱 Direct mobile access - starting camera capture');

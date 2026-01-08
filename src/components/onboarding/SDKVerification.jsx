@@ -70,25 +70,34 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   // Start ID document capture
   const startIDCapture = async () => {
     try {
+      console.log('🚀 [SDKVerification] Starting ID capture...');
+      console.log('📋 [SDKVerification] userData:', userData);
       setStep('id_capture');
       setError('');
 
       // Get SDK token for AutoCapture
       // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
       const docIdentifier = userData.cpf || userData.id_value || 'unknown';
+      console.log('🔑 [SDKVerification] Requesting SDK token with docIdentifier:', docIdentifier);
+      
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'AUTO_CAPTURE',
         customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`
       });
+      
+      console.log('✅ [SDKVerification] Token response received:', tokenResponse);
 
       if (tokenResponse.data.error) {
+        console.error('❌ [SDKVerification] Token response has error:', tokenResponse.data.error);
         throw new Error(tokenResponse.data.error);
       }
 
       const { token, transactionId } = tokenResponse.data;
       setIdTransactionId(transactionId);
 
-      console.log('🎫 Got AutoCapture SDK token, transactionId:', transactionId);
+      console.log('🎫 [SDKVerification] Got AutoCapture SDK token');
+      console.log('🆔 [SDKVerification] transactionId:', transactionId);
+      console.log('🎫 [SDKVerification] token length:', token?.length);
 
       // Initialize AutoCapture
       const AC = new AutoCapture();
@@ -112,7 +121,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       });
 
     } catch (err) {
-      console.error('❌ Failed to start ID capture:', err);
+      console.error('❌ [SDKVerification] Failed to start ID capture:', err);
+      console.error('❌ [SDKVerification] Error message:', err.message);
+      console.error('❌ [SDKVerification] Error stack:', err.stack);
+      console.error('❌ [SDKVerification] Full error object:', JSON.stringify(err, null, 2));
+      
       const friendlyError = err.message?.includes('credentials') 
         ? 'Verification service is temporarily unavailable. Please try again later.'
         : err.message || 'Failed to initialize document scanner. Please check camera permissions.';
@@ -123,7 +136,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   const handleIDCaptureComplete = async (data) => {
     try {
-      console.log('✅ ID capture completed:', data);
+      console.log('✅ [SDKVerification] ID capture completed');
+      console.log('📸 [SDKVerification] Captured images count:', data.image?.length);
       setStep('id_processing');
 
       // Extract images from data - AutoCapture returns data.image (array of base64 strings)
@@ -148,22 +162,27 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       }
 
       // Submit images to DataChecker
+      console.log('📤 [SDKVerification] Submitting ID images...');
       const submitResponse = await base44.functions.invoke('datacheckerSubmitIDVerify', {
         transactionId: idTransactionId,
         images
       });
+      
+      console.log('📥 [SDKVerification] Submit response:', submitResponse);
 
       if (submitResponse.data.error) {
+        console.error('❌ [SDKVerification] Submit error:', submitResponse.data.error);
         throw new Error(submitResponse.data.error);
       }
 
-      console.log('✅ ID images submitted successfully');
+      console.log('✅ [SDKVerification] ID images submitted successfully');
 
       // Move to face capture
       setTimeout(() => startFaceCapture(), 1000);
 
     } catch (err) {
-      console.error('❌ ID processing error:', err);
+      console.error('❌ [SDKVerification] ID processing error:', err);
+      console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
       setError(err.message || 'Failed to process document');
       setStep('failed');
     }
@@ -203,18 +222,23 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   // Start face capture
   const startFaceCapture = async () => {
     try {
+      console.log('👤 [SDKVerification] Starting face capture...');
       setStep('face_capture');
       setError('');
 
       // Get SDK token for FaceVerify
       // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
       const docIdentifier = userData.cpf || userData.id_value || 'unknown';
+      console.log('🔑 [SDKVerification] Requesting FaceVerify SDK token...');
+      
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'FACE_VERIFY',
         customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`,
         numberOfChallenges: 2,
         validateWatermark: true
       });
+      
+      console.log('✅ [SDKVerification] FaceVerify token response:', tokenResponse);
 
       if (tokenResponse.data.error) {
         throw new Error(tokenResponse.data.error);
@@ -353,6 +377,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   // Poll for verification results
   const pollForResults = async () => {
+    console.log('🔄 [SDKVerification] Starting polling for results...');
+    console.log('🆔 [SDKVerification] ID transactionId:', idTransactionId);
+    console.log('👤 [SDKVerification] Face transactionId:', faceTransactionId);
+    
     setStep('verifying');
     
     let idResultId = null;
@@ -363,46 +391,56 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     const pollInterval = setInterval(async () => {
       try {
         attempts++;
+        console.log(`🔄 [SDKVerification] Poll attempt ${attempts}/${maxAttempts}`);
 
         // Poll for ID result if not yet obtained
         if (!idResultId && idTransactionId) {
+          console.log('🔍 [SDKVerification] Polling for ID result...');
           const idPoll = await base44.functions.invoke('datacheckerPoll', {
             transactionId: idTransactionId
           });
+          
+          console.log('📥 [SDKVerification] ID poll response:', idPoll.data);
 
           if (idPoll.data.completed && idPoll.data.results?.length > 0) {
             idResultId = idPoll.data.results[0].resultId;
-            console.log('✅ ID verification completed, resultId:', idResultId);
+            console.log('✅ [SDKVerification] ID verification completed, resultId:', idResultId);
           }
         }
 
         // Poll for face result if not yet obtained
         if (!faceResultId && faceTransactionId) {
+          console.log('🔍 [SDKVerification] Polling for face result...');
           const facePoll = await base44.functions.invoke('datacheckerPoll', {
             transactionId: faceTransactionId
           });
+          
+          console.log('📥 [SDKVerification] Face poll response:', facePoll.data);
 
           if (facePoll.data.completed && facePoll.data.results?.length > 0) {
             faceResultId = facePoll.data.results[0].resultId;
-            console.log('✅ Face verification completed, resultId:', faceResultId);
+            console.log('✅ [SDKVerification] Face verification completed, resultId:', faceResultId);
           }
         }
 
         // If both results are ready, fetch and process them
         if (idResultId && faceResultId) {
+          console.log('🎉 [SDKVerification] Both results ready, processing...');
           clearInterval(pollInterval);
           await processResults(idResultId, faceResultId);
         }
 
         // Timeout after max attempts
         if (attempts >= maxAttempts) {
+          console.error('⏱️ [SDKVerification] Polling timeout reached');
           clearInterval(pollInterval);
           throw new Error('Verification timeout - please try again');
         }
 
       } catch (err) {
         clearInterval(pollInterval);
-        console.error('❌ Polling error:', err);
+        console.error('❌ [SDKVerification] Polling error:', err);
+        console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
         setError(err.message || 'Failed to verify identity');
         setStep('failed');
       }
@@ -411,18 +449,22 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   const processResults = async (idResultId, faceResultId) => {
     try {
+      console.log('🔄 [SDKVerification] Fetching ID result...');
       // Fetch ID result
       const idResult = await base44.functions.invoke('datacheckerGetResult', {
         resultId: idResultId
       });
+      console.log('✅ [SDKVerification] ID result fetched');
 
+      console.log('🔄 [SDKVerification] Fetching face result...');
       // Fetch face result
       const faceResult = await base44.functions.invoke('datacheckerGetResult', {
         resultId: faceResultId
       });
+      console.log('✅ [SDKVerification] Face result fetched');
 
-      console.log('📋 ID Result:', idResult.data);
-      console.log('📋 Face Result:', faceResult.data);
+      console.log('📋 [SDKVerification] ID Result:', idResult.data);
+      console.log('📋 [SDKVerification] Face Result:', faceResult.data);
 
       const idApproved = idResult.data.approved;
       const faceApproved = faceResult.data.approved;
@@ -438,11 +480,15 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       // Skip session update during onboarding - no user exists yet
 
       if (idApproved && faceApproved) {
+        console.log('✅ [SDKVerification] Verification successful!');
         setStep('success');
         setTimeout(() => {
+          console.log('🎉 [SDKVerification] Calling onComplete callback');
           onComplete(resultData);
         }, 2000);
       } else {
+        console.error('❌ [SDKVerification] Verification failed');
+        console.error('❌ [SDKVerification] ID approved:', idApproved, 'Face approved:', faceApproved);
         setStep('failed');
         setError(
           !idApproved 
@@ -452,7 +498,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       }
 
     } catch (err) {
-      console.error('❌ Error processing results:', err);
+      console.error('❌ [SDKVerification] Error processing results:', err);
+      console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
       setError(err.message || 'Failed to retrieve verification results');
       setStep('failed');
     }

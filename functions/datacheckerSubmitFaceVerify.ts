@@ -1,4 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { getOAuthToken } from './utils/datacheckerAuth.js';
 
 const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';

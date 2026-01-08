@@ -31,6 +31,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const getSDKTranslations = () => {
     if (language === 'pt') {
       return JSON.stringify({
+        // AutoCapture translations
         capture_error: 'Não foi possível capturar a imagem. Permita acesso à câmera.',
         confirm: 'Confirmar',
         retry: 'Tentar novamente',
@@ -41,10 +42,26 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         hold_steady: 'Mantenha firme',
         capturing: 'Capturando...',
         flip_document: 'Vire o documento',
+        // FaceVerify translations
         face_not_detected: 'Rosto não detectado',
         move_closer: 'Aproxime-se',
         look_straight: 'Olhe para frente',
-        follow_instructions: 'Siga as instruções'
+        follow_instructions: 'Siga as instruções',
+        start_prompt: 'Toque para começar',
+        no_face: 'Nenhum rosto detectado',
+        face_thresh: 'Rosto coberto',
+        face_far: 'Aproxime-se',
+        face_close: 'Afaste-se',
+        exp_dark: 'Imagem muito escura',
+        blur: 'Mantenha firme',
+        challenge_0: 'Centralize seu rosto',
+        challenge_out: 'Rosto muito longe',
+        challenge_1: 'Olhe para cima',
+        challenge_2: 'Olhe para direita',
+        challenge_3: 'Olhe para baixo',
+        challenge_4: 'Olhe para esquerda',
+        tutorial: 'Siga as instruções',
+        continue: 'Continuar'
       });
     }
     return 'en';

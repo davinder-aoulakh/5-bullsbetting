@@ -59,18 +59,6 @@ Deno.serve(async (req) => {
     const result = await idVerifyResponse.json();
     console.log('✅ ID verification submitted:', result);
 
-    // Log verification attempt
-    await base44.asServiceRole.entities.VerificationLog.create({
-      user_id: user.id,
-      verification_type: 'id_document',
-      provider: 'datachecker',
-      reference_id: transactionId,
-      status: 'initiated',
-      result_details: {
-        message: 'ID document images submitted for verification'
-      }
-    });
-
     return Response.json(result);
 
   } catch (error) {

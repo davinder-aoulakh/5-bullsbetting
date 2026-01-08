@@ -74,18 +74,6 @@ Deno.serve(async (req) => {
     const result = await faceVerifyResponse.json();
     console.log('✅ Face verification submitted:', result);
 
-    // Log verification attempt
-    await base44.asServiceRole.entities.VerificationLog.create({
-      user_id: user.id,
-      verification_type: 'facial_recognition',
-      provider: 'datachecker',
-      reference_id: transactionId,
-      status: 'initiated',
-      result_details: {
-        message: 'Face images submitted for liveness verification'
-      }
-    });
-
     return Response.json(result);
 
   } catch (error) {

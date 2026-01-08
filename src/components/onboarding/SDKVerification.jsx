@@ -57,9 +57,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       setError('');
 
       // Get SDK token for AutoCapture
+      // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
+      const docIdentifier = userData.cpf || userData.id_value || 'unknown';
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'AUTO_CAPTURE',
-        customerReference: `5bulls_${userData.country}_${userData.cpf}_${Date.now()}`
+        customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`
       });
 
       if (tokenResponse.data.error) {
@@ -181,9 +183,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       setError('');
 
       // Get SDK token for FaceVerify
+      // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
+      const docIdentifier = userData.cpf || userData.id_value || 'unknown';
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'FACE_VERIFY',
-        customerReference: `5bulls_${userData.country}_${userData.cpf}_${Date.now()}`,
+        customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`,
         numberOfChallenges: 2,
         validateWatermark: true
       });

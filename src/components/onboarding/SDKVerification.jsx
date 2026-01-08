@@ -94,7 +94,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
     } catch (err) {
       console.error('❌ Failed to start ID capture:', err);
-      setError(err.message || 'Failed to initialize document scanner');
+      const friendlyError = err.message?.includes('credentials') 
+        ? 'Verification service is temporarily unavailable. Please try again later.'
+        : err.message || 'Failed to initialize document scanner. Please check camera permissions.';
+      setError(friendlyError);
       setStep('failed');
     }
   };
@@ -214,7 +217,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
     } catch (err) {
       console.error('❌ Failed to start face capture:', err);
-      setError(err.message || 'Failed to initialize face verification');
+      const friendlyError = err.message?.includes('credentials')
+        ? 'Verification service is temporarily unavailable. Please try again later.'
+        : err.message || 'Failed to initialize face verification. Please check camera permissions.';
+      setError(friendlyError);
       setStep('failed');
     }
   };
@@ -478,7 +484,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
     } catch (err) {
       console.error('❌ Failed to create verification session:', err);
-      setError('Failed to create verification session');
+      setError('Failed to create verification session. Please refresh and try again.');
       setStep('failed');
     }
   };
@@ -493,15 +499,20 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       });
 
       if (!sessions || sessions.length === 0) {
-        throw new Error('Session not found or expired');
+        throw new Error('Verification session not found. The QR code may be invalid or expired.');
       }
 
       const session = sessions[0];
       console.log('✅ Session found, status:', session.status);
       
+      // Validate session expiry
+      if (session.expires_at && new Date(session.expires_at) < new Date()) {
+        throw new Error('Verification session has expired. Please scan a new QR code.');
+      }
+      
       // Only proceed if session is pending or in_progress
       if (session.status !== 'pending' && session.status !== 'in_progress') {
-        throw new Error('Session already completed or expired');
+        throw new Error('This verification session has already been completed.');
       }
       
       // Update session status
@@ -514,7 +525,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       await startIDCapture();
     } catch (err) {
       console.error('❌ Failed to load session:', err);
-      setError(err.message || 'Invalid or expired verification session');
+      setError(err.message || 'Invalid or expired verification session. Please scan a new QR code.');
       setStep('failed');
     }
   };

@@ -114,6 +114,16 @@ export default function Onboarding() {
       
       if (sessions && sessions.length > 0) {
         const session = sessions[0];
+        
+        // Validate session expiry
+        if (session.expires_at && new Date(session.expires_at) < new Date()) {
+          throw new Error('Verification session has expired. Please start the registration process again.');
+        }
+        
+        // Check if session is already used
+        if (session.status === 'completed' || session.status === 'failed') {
+          throw new Error('This verification session has already been used.');
+        }
         const sessionUserData = session.user_data;
         
         // Populate form data from session

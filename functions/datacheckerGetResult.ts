@@ -1,10 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { getOAuthToken } from './utils/datacheckerAuth.js';
 
 const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { resultId } = body;
 
@@ -14,37 +22,8 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Get access token directly
-    const clientId = Deno.env.get('DATACHECKER_CLIENT_ID');
-    const clientSecret = Deno.env.get('DATACHECKER_CLIENT_SECRET');
-
-    if (!clientId || !clientSecret) {
-      return Response.json({ 
-        error: 'DataChecker credentials not configured' 
-      }, { status: 500 });
-    }
-
-    const authHeader = 'Basic ' + btoa(`${clientId}:${clientSecret}`);
-    
-    const tokenResponse = await fetch(`https://developer.staging.datachecker.nl/api/v2/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        scopes: ['productapi.result.read']
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      return Response.json({ 
-        error: 'Failed to authenticate with DataChecker'
-      }, { status: 500 });
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.accessToken;
+    // Get OAuth token with required scope
+    const accessToken = await getOAuthToken(['productapi.result.read']);
 
     // Get detailed result
     const response = await fetch(

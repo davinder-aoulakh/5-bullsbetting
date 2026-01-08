@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { getOAuthToken } from './utils/datacheckerAuth.js';
 
 const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
@@ -26,45 +27,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get OAuth token
-    const clientId = Deno.env.get('DATACHECKER_CLIENT_ID');
-    const clientSecret = Deno.env.get('DATACHECKER_CLIENT_SECRET');
-
-    if (!clientId || !clientSecret) {
-      return Response.json({ 
-        error: 'DataChecker credentials not configured' 
-      }, { status: 500 });
-    }
-
-    const authHeader = 'Basic ' + btoa(`${clientId}:${clientSecret}`);
+    // Get OAuth token with minimal required scopes
+    const scopes = services === 'FACE_VERIFY' 
+      ? ['productapi.sdk.read', 'productapi.faceverify.write', 'productapi.poll.read', 'productapi.result.read']
+      : ['productapi.sdk.read'];
     
-    const tokenResponse = await fetch(`${DATACHECKER_BASE_URL}/api/v2/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        scopes: [
-          'productapi.sdk.read',
-          'productapi.idverify.write',
-          'productapi.faceverify.write',
-          'productapi.poll.read',
-          'productapi.result.read'
-        ]
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      const error = await tokenResponse.text();
-      console.error('❌ OAuth token error:', error);
-      return Response.json({ 
-        error: 'Failed to authenticate with DataChecker'
-      }, { status: 500 });
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.accessToken;
+    const accessToken = await getOAuthToken(scopes);
 
     // Build SDK token request URL
     let sdkTokenUrl = `${DATACHECKER_BASE_URL}/api/v2/sdk/token?services=${services}`;

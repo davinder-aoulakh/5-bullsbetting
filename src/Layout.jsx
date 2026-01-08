@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
 import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
+import SecurityHeaders from '@/components/SecurityHeaders';
 import { 
   Home, 
   Trophy, 
@@ -55,6 +56,7 @@ function LayoutContent({ children, currentPageName }) {
   if (minimalLayoutPages.includes(currentPageName)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <SecurityHeaders />
         <style>{`
           :root {
             --primary: 45 93% 47%;
@@ -83,6 +85,7 @@ function LayoutContent({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <SecurityHeaders />
       <style>{`
         :root {
           --primary: 45 93% 47%;

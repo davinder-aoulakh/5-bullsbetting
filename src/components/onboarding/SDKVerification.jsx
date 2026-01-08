@@ -435,26 +435,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         faceResult: faceResult.data
       };
 
-      // If this is a session-based verification, update the session (if user authenticated)
-      if (sessionId) {
-        try {
-          const isAuth = await base44.auth.isAuthenticated();
-          if (isAuth) {
-            const sessions = await base44.entities.VerificationSession.filter({
-              session_id: sessionId
-            });
-            
-            if (sessions && sessions.length > 0) {
-              await base44.entities.VerificationSession.update(sessions[0].id, {
-                status: idApproved && faceApproved ? 'completed' : 'failed',
-                result: resultData
-              });
-            }
-          }
-        } catch (err) {
-          console.error('❌ Failed to update session:', err);
-        }
-      }
+      // Skip session update during onboarding - no user exists yet
 
       if (idApproved && faceApproved) {
         setStep('success');
@@ -498,13 +479,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min expiry
       };
 
-      // Try to create session, but don't fail if user is not authenticated
-      try {
-        await base44.entities.VerificationSession.create(sessionData);
-      } catch (err) {
-        console.warn('⚠️ Could not create session (user not authenticated):', err);
-        // Continue anyway - session is optional for onboarding
-      }
+      // Skip session creation during onboarding - no user exists yet
       setSessionId(sessionData.session_id);
 
       // Create verification URL for mobile
@@ -546,24 +521,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         throw new Error('Session data not loaded properly. Please scan the QR code again.');
       }
       
-      // Update session status to in_progress (if user authenticated)
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
-          const sessions = await base44.entities.VerificationSession.filter({
-            session_id: sessionIdParam
-          });
-          
-          if (sessions && sessions.length > 0) {
-            await base44.entities.VerificationSession.update(sessions[0].id, {
-              status: 'in_progress'
-            });
-          }
-        }
-      } catch (sessionError) {
-        console.warn('⚠️ Could not update session status:', sessionError);
-        // Continue anyway as this is not critical
-      }
+      // Skip session update during onboarding - no user exists yet
 
       // Start verification with userData from parent
       console.log('🎬 Starting ID capture with userData:', userData);
@@ -576,48 +534,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   };
 
   // Poll for session completion (desktop flow)
+  // NOTE: During onboarding, sessions are not stored in DB since no user exists
+  // This would need to be refactored to use a different mechanism (e.g., localStorage)
   const startSessionPolling = (sessionIdParam) => {
-    let attempts = 0;
-    const maxAttempts = 120; // 10 minutes
-
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        attempts++;
-
-        // Check if user is authenticated before querying sessions
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
-          const sessions = await base44.entities.VerificationSession.filter({
-            session_id: sessionIdParam
-          });
-
-          if (sessions && sessions.length > 0) {
-            const session = sessions[0];
-
-            if (session.status === 'completed') {
-              clearInterval(pollIntervalRef.current);
-              setStep('success');
-              
-              setTimeout(() => {
-                onComplete(session.result || { verified: true });
-              }, 2000);
-            } else if (session.status === 'failed') {
-              clearInterval(pollIntervalRef.current);
-              setStep('failed');
-              setError('Verification failed on mobile device');
-            }
-          }
-        }
-
-        if (attempts >= maxAttempts) {
-          clearInterval(pollIntervalRef.current);
-          setError('Verification timeout - session expired');
-          setStep('failed');
-        }
-      } catch (err) {
-        console.error('❌ Session polling error:', err);
-      }
-    }, 5000);
+    console.log('⚠️ Session polling not available during onboarding (no user exists yet)');
+    // For now, desktop users should complete verification on same device
+    // Or implement a server-side temporary session store
   };
 
   // Cleanup polling on unmount

@@ -88,9 +88,9 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         DESKTOP_MODE: !isMobile,
         APPROVAL: true, // Show approval screen
         ALLOWED_DOCUMENTS: {
-          IDENTITY_CARD: { requireFlip: true },
-          PASSPORT: { requireFlip: false },
-          DRIVING_LICENSE: { requireFlip: true }
+          IDENTITY_CARD: ['FRONT', 'BACK'],
+          PASSPORT: ['FRONT'],
+          DRIVING_LICENSE: ['FRONT', 'BACK']
         }
       });
 
@@ -109,11 +109,18 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       console.log('✅ ID capture completed:', data);
       setStep('id_processing');
 
-      // Extract images from data
-      const images = data.images.map(img => ({
-        data: img.data.split(',')[1] || img.data, // Remove data URL prefix if present
-        type: img.type || 'IDENTITY_CARD'
-      }));
+      // Extract images from data - AutoCapture returns data.image (array of base64 strings)
+      const images = data.image.map((base64String, index) => {
+        // Remove data URL prefix if present
+        const base64Data = base64String.includes(',') 
+          ? base64String.split(',')[1] 
+          : base64String;
+
+        return {
+          data: base64Data,
+          type: data.meta?.[index]?.force_capture ? 'FORCED' : 'IDENTITY_CARD'
+        };
+      });
 
       setIdImages(images);
 
@@ -243,9 +250,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       // For face verification, we need to submit COMPARE + LIVE images
       // Use the first ID image as COMPARE (ideally the front with face)
       const compareImage = idImages[0];
-      
-      // The SDK should have captured live images
-      // If data contains images, use them; otherwise we rely on SDK's internal upload
+
+      // FaceVerify SDK returns data.images (array of captured face images)
       const images = [
         {
           type: 'COMPARE',
@@ -253,23 +259,33 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         }
       ];
 
-      // If SDK provides captured images, add them as LIVE
+      // Add captured live images from FaceVerify
       if (data.images && data.images.length > 0) {
         data.images.forEach(img => {
+          const base64Data = typeof img === 'string' 
+            ? (img.includes(',') ? img.split(',')[1] : img)
+            : (img.data?.split(',')[1] || img.data);
+
           images.push({
             type: 'LIVE',
-            data: img.data.split(',')[1] || img.data
+            data: base64Data
           });
         });
       }
 
       setFaceImages(images);
 
-      // Submit face verification with compare image
-      const submitResponse = await base44.functions.invoke('datacheckerSubmitFaceVerify', {
+      // Submit face verification with compare image and valid_challenges if available
+      const submitPayload = {
         transactionId: faceTransactionId,
         images
-      });
+      };
+
+      if (data.valid_challenges !== undefined) {
+        submitPayload.valid_challenges = data.valid_challenges;
+      }
+
+      const submitResponse = await base44.functions.invoke('datacheckerSubmitFaceVerify', submitPayload);
 
       if (submitResponse.data.error) {
         throw new Error(submitResponse.data.error);

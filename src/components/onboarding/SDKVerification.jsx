@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, XCircle, Camera, AlertCircle, Smartphone, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
+import AutoCapture from '@datachecker/autocapture';
+import FaceVerify from '@datachecker/faceverify';
 
 export default function SDKVerification({ onComplete, userData, isMobile }) {
   const { t, language } = useLanguage();
@@ -13,7 +15,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const [faceTransactionId, setFaceTransactionId] = useState(null);
   const [idImages, setIdImages] = useState([]);
   const [faceImages, setFaceImages] = useState([]);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [sessionId, setSessionId] = useState(null);
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -24,110 +25,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const acInstanceRef = useRef(null);
   const fvInstanceRef = useRef(null);
   const pollIntervalRef = useRef(null);
-
-  // Load DataChecker SDKs from CDN
-  useEffect(() => {
-    console.log('🔄 Starting SDK load process...');
-    let timeoutId;
-    
-    const loadSDKs = async () => {
-      try {
-        // Set a timeout to detect if SDKs fail to load
-        timeoutId = setTimeout(() => {
-          console.error('❌ SDK loading timeout after 5 seconds');
-          setError(
-            language === 'pt' 
-              ? 'Os SDKs de verificação não estão disponíveis. Por favor, recarregue a página.' 
-              : 'Verification SDKs are not available. Please reload the page.'
-          );
-          setStep('failed');
-        }, 5000); // 5 second timeout
-
-        // Check if SDKs are already loaded
-        if (window.AutoCapture && window.FaceVerify) {
-          console.log('✅ DataChecker SDKs already loaded');
-          clearTimeout(timeoutId);
-          setSdkLoaded(true);
-          return;
-        }
-
-        console.log('📦 Loading AutoCapture SDK from GitHub...');
-        // Try to load AutoCapture SDK from GitHub via jsdelivr
-        if (!window.AutoCapture) {
-          const acScript = document.createElement('script');
-          acScript.src = 'https://cdn.jsdelivr.net/gh/datacheckerbv/AutoCapture@latest/dist/autocapture.min.js';
-          acScript.async = true;
-          document.head.appendChild(acScript);
-          
-          await new Promise((resolve, reject) => {
-            const scriptTimeout = setTimeout(() => {
-              console.error('❌ AutoCapture script timeout');
-              reject(new Error('AutoCapture load timeout'));
-            }, 4000);
-            
-            acScript.onload = () => {
-              console.log('✅ AutoCapture script loaded');
-              clearTimeout(scriptTimeout);
-              resolve();
-            };
-            
-            acScript.onerror = (e) => {
-              console.error('❌ AutoCapture script error:', e);
-              clearTimeout(scriptTimeout);
-              reject(new Error('AutoCapture load failed'));
-            };
-          });
-        }
-
-        console.log('📦 Loading FaceVerify SDK from GitHub...');
-        // Try to load FaceVerify SDK from GitHub via jsdelivr
-        if (!window.FaceVerify) {
-          const fvScript = document.createElement('script');
-          fvScript.src = 'https://cdn.jsdelivr.net/gh/datacheckerbv/FaceVerify@latest/dist/faceverify.min.js';
-          fvScript.async = true;
-          document.head.appendChild(fvScript);
-          
-          await new Promise((resolve, reject) => {
-            const scriptTimeout = setTimeout(() => {
-              console.error('❌ FaceVerify script timeout');
-              reject(new Error('FaceVerify load timeout'));
-            }, 4000);
-            
-            fvScript.onload = () => {
-              console.log('✅ FaceVerify script loaded');
-              clearTimeout(scriptTimeout);
-              resolve();
-            };
-            
-            fvScript.onerror = (e) => {
-              console.error('❌ FaceVerify script error:', e);
-              clearTimeout(scriptTimeout);
-              reject(new Error('FaceVerify load failed'));
-            };
-          });
-        }
-
-        console.log('✅ All DataChecker SDKs loaded successfully');
-        clearTimeout(timeoutId);
-        setSdkLoaded(true);
-      } catch (err) {
-        console.error('❌ Failed to load SDKs:', err.message);
-        clearTimeout(timeoutId);
-        setError(
-          language === 'pt' 
-            ? 'SDKs de verificação não disponíveis. Use o "Modo Link".' 
-            : 'Verification SDKs unavailable. Use "Link Mode".'
-        );
-        setStep('failed');
-      }
-    };
-
-    loadSDKs();
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [language]);
 
   // Portuguese translations for SDK
   const getSDKTranslations = () => {
@@ -174,7 +71,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       console.log('🎫 Got AutoCapture SDK token, transactionId:', transactionId);
 
       // Initialize AutoCapture
-      const AC = new window.AutoCapture();
+      const AC = new AutoCapture();
       acInstanceRef.current = AC;
 
       AC.init({
@@ -297,7 +194,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       console.log('🎫 Got FaceVerify SDK token, transactionId:', transactionId);
 
       // Initialize FaceVerify
-      const FV = new window.FaceVerify();
+      const FV = new FaceVerify();
       fvInstanceRef.current = FV;
 
       await FV.init({
@@ -609,10 +506,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         status: 'in_progress'
       });
 
-      // Wait for SDKs to load, then start verification
-      if (sdkLoaded) {
-        startIDCapture();
-      }
+      // Start verification
+      startIDCapture();
     } catch (err) {
       console.error('❌ Failed to load session:', err);
       setError('Invalid or expired verification session');
@@ -670,13 +565,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     };
   }, []);
 
-  // Auto-start verification when SDKs are loaded
+  // Auto-start verification when component mounts
   useEffect(() => {
-    console.log('🔍 SDK loaded:', sdkLoaded, 'Step:', step, 'isMobile:', isMobile);
+    console.log('🚀 Starting verification flow...');
     
-    if (sdkLoaded && step === 'init') {
-      console.log('🚀 SDKs loaded, starting verification flow...');
-      
+    if (step === 'init') {
       if (!isMobile) {
         console.log('💻 Desktop detected - creating QR code session');
         createVerificationSession();
@@ -688,14 +581,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         if (!sessionIdFromUrl) {
           console.log('📱 Direct mobile access - starting camera capture');
           startIDCapture();
-        } else {
-          console.log('📱 Mobile with session - already handled by session load');
         }
       }
     }
-  }, [sdkLoaded, step, isMobile]);
+  }, [step, isMobile]);
 
-  if (!sdkLoaded || step === 'init') {
+  if (step === 'init') {
     return (
       <div className="text-center py-8">
         <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />

@@ -79,7 +79,8 @@
     "zod": "^3.24.2",
     "@datachecker/faceverify": "latest",
     "@datachecker/autocapture": "latest",
-    "react-helmet": "^6.1.0"
+    "react-helmet": "^6.1.0",
+    "qrcode": "^1.5.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 import AutoCapture from '@datachecker/autocapture';
 import FaceVerify from '@datachecker/faceverify';
+import QRCodeLib from 'qrcode';
 
 export default function SDKVerification({ onComplete, userData, isMobile }) {
   const { t, language } = useLanguage();
@@ -471,9 +472,16 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       const url = `${baseUrl}${window.location.pathname}?verificationSession=${sessionData.session_id}`;
       setVerificationUrl(url);
 
-      // Generate QR code using an API
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-      setQrCodeUrl(qrUrl);
+      // Generate QR code locally using qrcode library
+      const qrDataUrl = await QRCodeLib.toDataURL(url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeUrl(qrDataUrl);
 
       setStep('qr_display');
       
@@ -749,13 +757,17 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         </div>
 
         {/* QR Code */}
-        {qrCodeUrl && (
+        {qrCodeUrl ? (
           <div className="bg-white p-6 rounded-xl mx-auto inline-block">
             <img
               src={qrCodeUrl}
               alt="QR Code for verification"
               className="w-64 h-64"
             />
+          </div>
+        ) : (
+          <div className="bg-white p-6 rounded-xl mx-auto inline-block w-64 h-64 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
           </div>
         )}
 

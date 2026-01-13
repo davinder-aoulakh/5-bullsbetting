@@ -10,6 +10,7 @@ Deno.serve(async (req) => {
     const { services, customerReference, numberOfChallenges, validateWatermark } = body;
 
     console.log('🎫 Requesting SDK token for services:', services);
+    console.log('📋 Customer reference:', customerReference);
 
     if (USE_MOCK) {
       // Return mock SDK token for testing
@@ -25,7 +26,9 @@ Deno.serve(async (req) => {
       ? ['productapi.sdk.read', 'productapi.faceverify.write', 'productapi.poll.read', 'productapi.result.read']
       : ['productapi.sdk.read'];
     
+    console.log('🔑 Getting OAuth token with scopes:', scopes);
     const accessToken = await getOAuthToken(scopes);
+    console.log('✅ OAuth token received');
 
     // Build SDK token request URL
     let sdkTokenUrl = `${DATACHECKER_BASE_URL}/api/v2/sdk/token?services=${services}`;
@@ -66,9 +69,14 @@ Deno.serve(async (req) => {
     return Response.json(sdkTokenData);
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('❌ Fatal error in datacheckerGetSDKToken:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return Response.json({ 
-      error: error.message 
+      error: error.message || 'Unknown error occurred',
+      errorName: error.name,
+      errorStack: error.stack
     }, { status: 500 });
   }
 });

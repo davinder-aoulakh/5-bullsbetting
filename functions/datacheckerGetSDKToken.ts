@@ -4,8 +4,9 @@ const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
+  // CRITICAL: Skip all authentication - this endpoint is called during onboarding BEFORE user creation
+  // Do not use createClientFromRequest or any Base44 SDK auth methods
   try {
-    // No authentication check - this is called during onboarding before user creation
     const body = await req.json();
     const { services, customerReference, numberOfChallenges, validateWatermark } = body;
 

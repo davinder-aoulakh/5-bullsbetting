@@ -31,6 +31,7 @@ import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
 import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
 import SDKVerification from '@/components/onboarding/SDKVerification';
 import { useLanguage } from '@/components/LanguageContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Onboarding() {
   const { t } = useLanguage();
@@ -79,7 +80,7 @@ export default function Onboarding() {
   
   const [kycPassed, setKycPassed] = useState(false);
   const [idvCompleted, setIdvCompleted] = useState(false);
-  const [useSDKVerification, setUseSDKVerification] = useState(true); // SDK mode only
+  const [verificationTab, setVerificationTab] = useState('sdk'); // 'sdk' or 'link'
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -763,11 +764,41 @@ export default function Onboarding() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <SDKVerification
-                    onComplete={handleIDVComplete}
-                    isMobile={isMobile}
-                    userData={{ ...userData, email, phone }}
-                  />
+                  <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      Identity Verification
+                    </h2>
+                    <p className="text-white/60">
+                      Choose your preferred verification method
+                    </p>
+                  </div>
+
+                  <Tabs value={verificationTab} onValueChange={setVerificationTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/5">
+                      <TabsTrigger value="sdk" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
+                        SDK Verification
+                      </TabsTrigger>
+                      <TabsTrigger value="link" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
+                        Link Verification
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="sdk" className="mt-0">
+                      <SDKVerification
+                        onComplete={handleIDVComplete}
+                        isMobile={isMobile}
+                        userData={{ ...userData, email, phone }}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="link" className="mt-0">
+                      <DataCheckerVerification
+                        onComplete={handleIDVComplete}
+                        isMobile={isMobile}
+                        userData={{ ...userData, email, phone }}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </motion.div>
               )}
             </AnimatePresence>

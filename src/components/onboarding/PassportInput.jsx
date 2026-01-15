@@ -11,6 +11,8 @@ export default function PassportInput({
   isValid,
   country 
 }) {
+  console.log('🎫 PassportInput render:', { value, country, error, isValid });
+  
   const getPlaceholder = () => {
     switch (country) {
       case 'AU': return 'PA1234567';
@@ -18,6 +20,12 @@ export default function PassportInput({
       case 'CW': return 'AB1234567';
       default: return 'Enter passport number';
     }
+  };
+  
+  const handleInputChange = (e) => {
+    const newValue = e.target.value.trim().toUpperCase();
+    console.log('🎫 Input change:', { original: e.target.value, processed: newValue });
+    onChange(newValue);
   };
 
   return (
@@ -30,7 +38,7 @@ export default function PassportInput({
           id="passport"
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          onChange={handleInputChange}
           placeholder={getPlaceholder()}
           className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12"
         />

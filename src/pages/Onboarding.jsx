@@ -243,18 +243,18 @@ export default function Onboarding() {
   };
 
   const handlePassportChange = (value) => {
-    const trimmedValue = value.trim().toUpperCase();
-    console.log('📝 Passport change:', { original: value, trimmed: trimmedValue, country: selectedCountry });
-    setPassport(trimmedValue);
+    console.log('📝 Passport change called:', { value, country: selectedCountry, valueType: typeof value });
+    
+    setPassport(value);
     setPassportError('');
     setPassportValid(false);
     
-    if (trimmedValue.length >= 6) {
+    if (value.length >= 6) {
       setPassportValidating(true);
       
       setTimeout(() => {
-        const isValid = validatePassport(trimmedValue, selectedCountry);
-        console.log('⏰ Validation complete:', { isValid, value: trimmedValue, country: selectedCountry });
+        const isValid = validatePassport(value, selectedCountry);
+        console.log('⏰ Validation complete:', { isValid, value, country: selectedCountry });
         
         if (isValid) {
           setPassportValid(true);

@@ -135,17 +135,21 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           ? base64String.split(',')[1] 
           : base64String;
 
-        // Preserve SDK metadata for type determination
-        let imageType = 'IDENTITY_CARD';
-        if (data.meta?.[index]) {
-          const meta = data.meta[index];
-          if (meta.force_capture) {
-            imageType = 'FORCED';
-          } else if (meta.page_type) {
-            imageType = meta.page_type;
-          } else if (meta.document_type) {
-            imageType = meta.document_type;
-          }
+        // Map to proper page types (FRONT/BACK) for DataChecker
+        let imageType = null;
+        const meta = data.meta?.[index];
+
+        // Priority 1: Use meta.page_type if it's FRONT or BACK
+        if (meta && (meta.page_type === 'FRONT' || meta.page_type === 'BACK')) {
+          imageType = meta.page_type;
+        }
+        // Priority 2: For PASSPORT with single image, use FRONT
+        else if (meta && meta.document_type === 'PASSPORT' && data.images.length === 1) {
+          imageType = 'FRONT';
+        }
+        // Priority 3: Fallback based on index for multi-image docs
+        else {
+          imageType = (index === 0 ? 'FRONT' : 'BACK');
         }
 
         return {
@@ -255,7 +259,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           console.log('✅ ID result retrieved:', JSON.stringify({
             identityApproved: resultResponse.data.identityApproved,
             imagesCount: resultResponse.data.images?.length,
-            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType)
+            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType),
+            imageSummary: resultResponse.data.imageSummary
           }));
 
           // Extract COMPARE image from result

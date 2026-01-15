@@ -109,7 +109,14 @@ Deno.serve(async (req) => {
         result: data.faceVerify.result
       } : null,
       images: data.images || [],
-      transactionId: data.transactionId
+      transactionId: data.transactionId,
+      imageSummary: data.images?.map(x => ({ 
+        type: x.type, 
+        pageType: x.pageType, 
+        documentType: x.documentType, 
+        hasData: !!x.data, 
+        dataLength: x.data?.length 
+      })) || []
     });
 
   } catch (error) {

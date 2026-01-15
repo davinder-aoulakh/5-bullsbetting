@@ -23,12 +23,17 @@ export default function PassportInput({
   };
   
   const handleInputChange = (e) => {
-    // Remove ALL whitespace (including invisible characters) and convert to uppercase
-    const newValue = e.target.value.replace(/\s/g, '').toUpperCase();
+    // Keep only printable ASCII characters, remove all whitespace
+    const newValue = e.target.value
+      .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters
+      .replace(/\s/g, '')            // Remove all whitespace
+      .toUpperCase();
+    
     console.log('🎫 Input change:', { 
       original: e.target.value, 
       processed: newValue,
-      charCodes: [...newValue].map(c => c.charCodeAt(0))
+      originalCodes: [...e.target.value].map(c => c.charCodeAt(0)),
+      processedCodes: [...newValue].map(c => c.charCodeAt(0))
     });
     onChange(newValue);
   };

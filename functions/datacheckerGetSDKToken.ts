@@ -1,5 +1,3 @@
-import { getOAuthToken } from './utils/datacheckerAuth.js';
-
 const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
@@ -19,8 +17,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ALWAYS use only productapi.sdk.read scope regardless of services
-    const accessToken = await getOAuthToken(['productapi.sdk.read']);
+    // Get OAuth token directly (same pattern as datacheckerCreateLink)
+    const clientId = Deno.env.get('DATACHECKER_CLIENT_ID');
+    const clientSecret = Deno.env.get('DATACHECKER_CLIENT_SECRET');
+
+    if (!clientId || !clientSecret) {
+      return Response.json({ 
+        error: 'DataChecker credentials not configured' 
+      }, { status: 500 });
+    }
+
+    const authHeader = 'Basic ' + btoa(`${clientId}:${clientSecret}`);
+    
+    const tokenResponse = await fetch(`${DATACHECKER_BASE_URL}/api/v2/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        scopes: ['productapi.sdk.read']
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.text();
+      console.error('❌ OAuth token request failed:', tokenResponse.status);
+      return Response.json({ 
+        error: 'Failed to authenticate with DataChecker'
+      }, { status: 500 });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.accessToken;
 
     // Build SDK token request URL
     let sdkTokenUrl = `${DATACHECKER_BASE_URL}/api/v2/sdk/token?services=${services}`;

@@ -96,18 +96,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Add debug summary for troubleshooting (no base64 data)
-    const images = data.images || [];
-    const imageSummary = images.map(img => ({
-      type: img.type,
-      pageType: img.pageType,
-      documentType: img.documentType,
-      hasData: !!img.data,
-      dataLength: img.data?.length || 0
-    }));
-
-    console.log('📊 Image summary:', JSON.stringify(imageSummary));
-
     return Response.json({
       approved,
       identityApproved,
@@ -120,8 +108,7 @@ Deno.serve(async (req) => {
       faceVerify: data.faceVerify ? {
         result: data.faceVerify.result
       } : null,
-      images,
-      imageSummary,
+      images: data.images || [],
       transactionId: data.transactionId
     });
 

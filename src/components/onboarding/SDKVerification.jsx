@@ -129,47 +129,32 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       console.log('Images count:', data.images?.length);
       setStep('id_processing');
 
-      // Extract images with correct type mapping for DataChecker idverify
-      // CRITICAL: DataChecker expects page sides (FRONT/BACK) not document types
-      const allowedSides = new Set(['FRONT', 'BACK']);
-
+      // Extract images with proper type handling
       const images = data.images.map((base64String, index) => {
         const base64Data = base64String.includes(',') 
           ? base64String.split(',')[1] 
           : base64String;
 
-        // Determine correct side type for DataChecker
-        let side = null;
-
+        // Preserve SDK metadata for type determination
+        let imageType = 'IDENTITY_CARD';
         if (data.meta?.[index]) {
           const meta = data.meta[index];
-
-          // Priority 1: Use page_type if it's a valid side
-          if (allowedSides.has(meta.page_type)) {
-            side = meta.page_type;
-          }
-          // Priority 2: If document_type is PASSPORT, use FRONT
-          else if (meta.document_type === 'PASSPORT') {
-            side = 'FRONT';
-          }
-        }
-
-        // Fallback: Use index-based logic
-        if (!side) {
-          if (data.images.length === 1) {
-            side = 'FRONT'; // Single image = front (usually passport)
-          } else {
-            side = index === 0 ? 'FRONT' : 'BACK';
+          if (meta.force_capture) {
+            imageType = 'FORCED';
+          } else if (meta.page_type) {
+            imageType = meta.page_type;
+          } else if (meta.document_type) {
+            imageType = meta.document_type;
           }
         }
 
         return {
           data: base64Data,
-          type: side
+          type: imageType
         };
       });
 
-      console.log('📸 Processed images with correct sides:', images.map(img => ({ type: img.type, dataLength: img.data?.length })));
+      console.log('📸 Processed images:', images.map(img => ({ type: img.type, dataLength: img.data?.length })));
 
       // Clean up AutoCapture instance
       if (acInstanceRef.current) {

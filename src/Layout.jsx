@@ -18,6 +18,7 @@ import {
   Globe
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,17 @@ function LayoutContent({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    // Load Eruda for mobile debugging
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+    script.onload = () => {
+      if (window.eruda) {
+        window.eruda.init();
+        console.log('🔧 Eruda mobile console loaded!');
+      }
+    };
+    document.body.appendChild(script);
+    
     loadUser();
   }, []);
 

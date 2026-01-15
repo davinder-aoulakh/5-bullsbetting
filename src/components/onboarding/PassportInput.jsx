@@ -50,6 +50,12 @@ export default function PassportInput({
           value={value}
           onChange={handleInputChange}
           placeholder={getPlaceholder()}
+          maxLength={20}
+          inputMode="text"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="characters"
+          spellCheck="false"
           className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12"
         />
         {isValidating && (

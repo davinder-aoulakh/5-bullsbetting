@@ -1,35 +1,25 @@
 import { getOAuthToken } from './utils/datacheckerAuth.js';
 
-const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
-  // CRITICAL: Skip all authentication - this endpoint is called during onboarding BEFORE user creation
-  // Do not use createClientFromRequest or any Base44 SDK auth methods
   try {
     const body = await req.json();
     const { services, customerReference, numberOfChallenges, validateWatermark } = body;
 
     console.log('🎫 Requesting SDK token for services:', services);
-    console.log('📋 Customer reference:', customerReference);
+    console.log('📋 Customer reference:', customerReference ? 'provided' : 'not provided');
 
     if (USE_MOCK) {
-      // Return mock SDK token for testing
       return Response.json({
         token: 'MOCK_SDK_TOKEN_' + services + '_' + Date.now(),
-        transactionId: 'mock-transaction-' + Date.now(),
-        services
+        transactionId: 'mock-transaction-' + Date.now()
       });
     }
 
-    // Get OAuth token with minimal required scopes
-    const scopes = services === 'FACE_VERIFY' 
-      ? ['productapi.sdk.read', 'productapi.faceverify.write', 'productapi.poll.read', 'productapi.result.read']
-      : ['productapi.sdk.read'];
-    
-    console.log('🔑 Getting OAuth token with scopes:', scopes);
-    const accessToken = await getOAuthToken(scopes);
-    console.log('✅ OAuth token received');
+    // ALWAYS use only productapi.sdk.read scope regardless of services
+    const accessToken = await getOAuthToken(['productapi.sdk.read']);
 
     // Build SDK token request URL
     let sdkTokenUrl = `${DATACHECKER_BASE_URL}/api/v2/sdk/token?services=${services}`;
@@ -38,15 +28,15 @@ Deno.serve(async (req) => {
       sdkTokenUrl += `&customer_reference=${encodeURIComponent(customerReference)}`;
     }
     
-    if (numberOfChallenges) {
-      sdkTokenUrl += `&number_of_challenges=${numberOfChallenges}`;
+    // Only append these for FACE_VERIFY
+    if (services === 'FACE_VERIFY') {
+      if (numberOfChallenges) {
+        sdkTokenUrl += `&number_of_challenges=${numberOfChallenges}`;
+      }
+      if (validateWatermark !== undefined) {
+        sdkTokenUrl += `&validateWatermark=${validateWatermark}`;
+      }
     }
-    
-    if (validateWatermark !== undefined) {
-      sdkTokenUrl += `&validateWatermark=${validateWatermark}`;
-    }
-
-    console.log('🌐 SDK token URL:', sdkTokenUrl);
 
     const sdkTokenResponse = await fetch(sdkTokenUrl, {
       method: 'GET',
@@ -57,27 +47,24 @@ Deno.serve(async (req) => {
 
     if (!sdkTokenResponse.ok) {
       const error = await sdkTokenResponse.text();
-      console.error('❌ SDK token error:', error);
+      console.error('❌ SDK token request failed:', sdkTokenResponse.status);
       return Response.json({ 
-        error: 'Failed to get SDK token',
-        details: error
+        error: 'Failed to get SDK token'
       }, { status: sdkTokenResponse.status });
     }
 
     const sdkTokenData = await sdkTokenResponse.json();
-    console.log('✅ SDK token obtained:', sdkTokenData);
+    console.log('✅ SDK token obtained, transactionId:', sdkTokenData.transactionId);
 
-    return Response.json(sdkTokenData);
+    return Response.json({
+      token: sdkTokenData.token,
+      transactionId: sdkTokenData.transactionId
+    });
 
   } catch (error) {
-    console.error('❌ Fatal error in datacheckerGetSDKToken:', error);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error in datacheckerGetSDKToken:', error.message);
     return Response.json({ 
-      error: error.message || 'Unknown error occurred',
-      errorName: error.name,
-      errorStack: error.stack
+      error: error.message || 'Unknown error occurred'
     }, { status: 500 });
   }
 });

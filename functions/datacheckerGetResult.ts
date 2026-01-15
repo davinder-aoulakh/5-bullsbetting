@@ -1,13 +1,12 @@
 import { getOAuthToken } from './utils/datacheckerAuth.js';
 
-const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
   try {
-    // No authentication check - this is called during onboarding before user creation
     const body = await req.json();
-    const { resultId } = body;
+    const { resultId, expectedProduct } = body;
 
     if (!resultId) {
       return Response.json({ 
@@ -15,10 +14,10 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Get OAuth token with required scope
+    console.log('📥 Getting result for resultId:', resultId, 'expectedProduct:', expectedProduct || 'not specified');
+
     const accessToken = await getOAuthToken(['productapi.result.read']);
 
-    // Get detailed result
     const response = await fetch(
       `${DATACHECKER_BASE_URL}/api/v2/result/${resultId}`,
       {
@@ -30,38 +29,61 @@ Deno.serve(async (req) => {
     );
 
     if (!response.ok) {
-      const error = await response.text();
+      console.error('❌ Get result failed:', response.status);
       return Response.json({ 
-        error: 'Failed to get verification result',
-        details: error
+        error: 'Failed to get verification result'
       }, { status: response.status });
     }
 
     const data = await response.json();
 
-    console.log('DataChecker result response:', JSON.stringify(data, null, 2));
+    console.log('✅ Result retrieved, product:', data.product);
 
-    // Determine overall status
+    // Determine approval based on what exists and expectedProduct
     const identityApproved = data.identity?.result === 'APPROVED';
     const faceApproved = data.faceVerify?.result === 'APPROVED';
-    const overallApproved = identityApproved && faceApproved;
-
-    // Note: Verification log will be created when user account is created after successful verification
+    
+    let approved;
+    
+    if (expectedProduct) {
+      if (expectedProduct === 'FACE_VERIFY') {
+        approved = faceApproved;
+      } else if (expectedProduct.startsWith('IDV')) {
+        approved = identityApproved;
+      } else {
+        approved = identityApproved && faceApproved;
+      }
+    } else {
+      // No expected product specified
+      if (data.identity && data.faceVerify) {
+        approved = identityApproved && faceApproved;
+      } else if (data.identity) {
+        approved = identityApproved;
+      } else if (data.faceVerify) {
+        approved = faceApproved;
+      } else {
+        approved = false;
+      }
+    }
 
     return Response.json({
-      approved: overallApproved,
+      approved,
+      identityApproved,
+      faceApproved,
       result: data.result,
-      identity: {
-        result: data.identity?.result,
-        data: data.identity?.data
-      },
-      faceVerify: {
-        result: data.faceVerify?.result
-      },
+      identity: data.identity ? {
+        result: data.identity.result,
+        data: data.identity.data
+      } : null,
+      faceVerify: data.faceVerify ? {
+        result: data.faceVerify.result
+      } : null,
+      images: data.images || [],
       transactionId: data.transactionId
     });
 
   } catch (error) {
+    console.error('❌ Error in datacheckerGetResult:', error.message);
     return Response.json({ 
       error: error.message 
     }, { status: 500 });

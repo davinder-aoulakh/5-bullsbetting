@@ -1,14 +1,10 @@
-const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 
-// Simple in-memory cache for access tokens
-let tokenCache = {
-  token: null,
-  scopes: [],
-  expiresAt: 0
-};
+// Per-scope-set token cache
+const tokenCache = new Map();
 
 /**
- * Get OAuth token from DataChecker with caching
+ * Get OAuth token from DataChecker with per-scope-set caching
  * @param {string[]} scopes - Array of required scopes
  * @returns {Promise<string>} Access token
  * @throws Error if authentication fails
@@ -16,13 +12,14 @@ let tokenCache = {
 export async function getOAuthToken(scopes) {
   const now = Date.now();
   
-  // Check if we have a valid cached token with matching scopes
-  if (tokenCache.token && tokenCache.expiresAt > now) {
-    const hasAllScopes = scopes.every(scope => tokenCache.scopes.includes(scope));
-    if (hasAllScopes) {
-      console.log('✅ Using cached OAuth token');
-      return tokenCache.token;
-    }
+  // Create stable cache key from sorted scopes
+  const cacheKey = [...scopes].sort().join(',');
+  
+  // Check if we have a valid cached token for this scope set
+  const cached = tokenCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    console.log('✅ Using cached OAuth token for scopes:', scopes.length);
+    return cached.token;
   }
 
   // Get credentials
@@ -35,7 +32,7 @@ export async function getOAuthToken(scopes) {
 
   const authHeader = 'Basic ' + btoa(`${clientId}:${clientSecret}`);
   
-  console.log('🔑 Requesting new OAuth token with scopes:', scopes);
+  console.log('🔑 Requesting new OAuth token with scopes:', scopes.length);
   
   const tokenResponse = await fetch(`${DATACHECKER_BASE_URL}/api/v2/oauth/token`, {
     method: 'POST',
@@ -48,23 +45,24 @@ export async function getOAuthToken(scopes) {
 
   if (!tokenResponse.ok) {
     const error = await tokenResponse.text();
-    console.error('❌ OAuth token error:', error);
+    console.error('❌ OAuth token request failed with status:', tokenResponse.status);
     throw new Error('Failed to authenticate with DataChecker');
   }
 
   const tokenData = await tokenResponse.json();
   const accessToken = tokenData.accessToken;
+  const expiresIn = tokenData.expires_in || 300; // Default to 5 minutes
 
   if (!accessToken) {
     throw new Error('No access token in OAuth response');
   }
 
-  // Cache the token (expires in 5 minutes)
-  tokenCache = {
+  // Cache the token with safety buffer (subtract 30 seconds)
+  const expiresAt = now + ((expiresIn - 30) * 1000);
+  tokenCache.set(cacheKey, {
     token: accessToken,
-    scopes: scopes,
-    expiresAt: now + (5 * 60 * 1000)
-  };
+    expiresAt
+  });
 
   console.log('✅ New OAuth token obtained and cached');
   return accessToken;

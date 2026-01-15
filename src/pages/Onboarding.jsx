@@ -221,12 +221,12 @@ export default function Onboarding() {
   // Passport validation
   const validatePassport = (value, country) => {
     switch (country) {
-      case 'AU': // Australian passport: Letter + 7 digits
-        return /^[A-Z]\d{7}$/.test(value);
-      case 'NL': // Dutch passport: 2 letters + 6 digits + 1 digit
-        return /^[A-Z]{2}\d{6}\d$/.test(value);
+      case 'AU': // Australian passport: 2 letters + 7 digits
+        return /^[A-Z]{2}\d{7}$/.test(value);
+      case 'NL': // Dutch passport: 2 letters + 7 digits
+        return /^[A-Z]{2}\d{7}$/.test(value);
       case 'CW': // Curacao passport (similar to Dutch)
-        return /^[A-Z]{2}\d{6}\d$/.test(value);
+        return /^[A-Z]{2}\d{7}$/.test(value);
       default:
         return value.length >= 6;
     }

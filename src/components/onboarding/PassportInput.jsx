@@ -13,7 +13,7 @@ export default function PassportInput({
 }) {
   const getPlaceholder = () => {
     switch (country) {
-      case 'AU': return 'P1234567';
+      case 'AU': return 'PA1234567';
       case 'NL': return 'AB1234567';
       case 'CW': return 'AB1234567';
       default: return 'Enter passport number';

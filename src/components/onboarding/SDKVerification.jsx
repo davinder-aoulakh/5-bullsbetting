@@ -12,6 +12,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const [step, setStep] = useState('init'); // init, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [debugInfo, setDebugInfo] = useState(null);
   
   // Use refs to avoid race conditions
   const customerReferenceRef = useRef(null);
@@ -252,12 +253,21 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             expectedProduct: 'IDV_LITE'
           });
 
-          console.log('✅ ID result retrieved:', JSON.stringify({
+          console.log('✅ ID result retrieved');
+
+          // Store debug info for display
+          const debugData = {
             identityApproved: resultResponse.data.identityApproved,
             imagesCount: resultResponse.data.images?.length,
-            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType),
-            fullImages: resultResponse.data.images
-          }, null, 2));
+            imageTypes: resultResponse.data.images?.map(img => ({
+              type: img.type,
+              pageType: img.pageType,
+              hasData: !!img.data,
+              dataLength: img.data?.length
+            }))
+          };
+          setDebugInfo(debugData);
+          console.log('Debug info:', JSON.stringify(debugData, null, 2));
 
           // Extract COMPARE image from result - try multiple strategies
           let compareImage = resultResponse.data.images?.find(
@@ -279,7 +289,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           }
 
           if (!compareImage) {
-            console.error('❌ No usable image found. Full result:', JSON.stringify(resultResponse.data, null, 2));
+            console.error('❌ No usable image found');
             throw new Error('No face image found in ID verification result. Please ensure your document photo is clear.');
           }
 
@@ -606,8 +616,17 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         </h3>
         <p className="text-white/60 mb-4">{error}</p>
         
+        {debugInfo && (
+          <div className="mt-4 p-4 bg-slate-800 rounded-lg text-left max-w-md mx-auto">
+            <p className="text-xs text-white/70 mb-2 font-mono">Debug Info:</p>
+            <pre className="text-xs text-white/60 overflow-auto">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </div>
+        )}
+        
         {retryCount < 3 && (
-          <Button onClick={handleRetry} className="gold-gradient text-black">
+          <Button onClick={handleRetry} className="gold-gradient text-black mt-4">
             {language === 'pt' ? 'Tentar Novamente' : 'Try Again'}
           </Button>
         )}

@@ -1,37 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, XCircle, Camera, AlertCircle, Smartphone, QrCode } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 import AutoCapture from '@datachecker/autocapture';
 import FaceVerify from '@datachecker/faceverify';
-import QRCodeLib from 'qrcode';
 
 export default function SDKVerification({ onComplete, userData, isMobile }) {
   const { t, language } = useLanguage();
-  const [step, setStep] = useState('init'); // init, qr_display (desktop), id_capture, id_processing, face_capture, face_processing, verifying, success, failed
+  const [step, setStep] = useState('init'); // init, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
   const [error, setError] = useState('');
-  const [idTransactionId, setIdTransactionId] = useState(null);
-  const [faceTransactionId, setFaceTransactionId] = useState(null);
-  const [idImages, setIdImages] = useState([]);
-  const [faceImages, setFaceImages] = useState([]);
   const [retryCount, setRetryCount] = useState(0);
-  const [sessionId, setSessionId] = useState(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState(null);
-  const [verificationUrl, setVerificationUrl] = useState(null);
   
-  const acContainerRef = useRef(null);
-  const fvContainerRef = useRef(null);
+  // Use refs to avoid race conditions
+  const customerReferenceRef = useRef(null);
+  const idTxRef = useRef(null);
+  const faceTxRef = useRef(null);
+  const compareImageRef = useRef(null);
   const acInstanceRef = useRef(null);
   const fvInstanceRef = useRef(null);
-  const pollIntervalRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
 
   // Portuguese translations for SDK
   const getSDKTranslations = () => {
     if (language === 'pt') {
       return JSON.stringify({
-        // AutoCapture translations
         capture_error: 'Não foi possível capturar a imagem. Permita acesso à câmera.',
         confirm: 'Confirmar',
         retry: 'Tentar novamente',
@@ -42,7 +36,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         hold_steady: 'Mantenha firme',
         capturing: 'Capturando...',
         flip_document: 'Vire o documento',
-        // FaceVerify translations
         face_not_detected: 'Rosto não detectado',
         move_closer: 'Aproxime-se',
         look_straight: 'Olhe para frente',
@@ -67,42 +60,45 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     return 'en';
   };
 
+  // Generate stable customerReference once at start
+  const initializeCustomerReference = () => {
+    if (!customerReferenceRef.current) {
+      const docIdentifier = userData.cpf || userData.id_value || 'unknown';
+      const sessionId = Date.now();
+      customerReferenceRef.current = `5bulls_${userData.country}_${docIdentifier}_${sessionId}`;
+      console.log('🔑 Generated stable customerReference:', customerReferenceRef.current);
+    }
+  };
+
   // Start ID document capture
   const startIDCapture = async () => {
     try {
-      console.log('🚀 [SDKVerification] Starting ID capture...');
-      console.log('📋 [SDKVerification] userData:', userData);
+      console.log('🚀 Starting ID capture...');
+      initializeCustomerReference();
       setStep('id_capture');
       setError('');
 
       // Get SDK token for AutoCapture
-      // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
-      const docIdentifier = userData.cpf || userData.id_value || 'unknown';
-      console.log('🔑 [SDKVerification] Requesting SDK token with docIdentifier:', docIdentifier);
-      
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'AUTO_CAPTURE',
-        customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`
+        customerReference: customerReferenceRef.current
       });
-      
-      console.log('✅ [SDKVerification] Token response received:', tokenResponse);
 
       if (tokenResponse.data.error) {
-        console.error('❌ [SDKVerification] Token response has error:', tokenResponse.data.error);
         throw new Error(tokenResponse.data.error);
       }
 
       const { token, transactionId } = tokenResponse.data;
-      setIdTransactionId(transactionId);
-
-      console.log('🎫 [SDKVerification] Got AutoCapture SDK token');
-      console.log('🆔 [SDKVerification] transactionId:', transactionId);
-      console.log('🎫 [SDKVerification] token length:', token?.length);
+      idTxRef.current = transactionId;
+      console.log('✅ Got AutoCapture SDK token, transactionId:', transactionId);
 
       // Initialize AutoCapture
       const AC = new AutoCapture();
       acInstanceRef.current = AC;
 
+      // Don't use DESKTOP_MODE in production
+      const isDevMode = window.location.hostname === 'localhost' || window.location.hostname.includes('staging');
+      
       AC.init({
         CONTAINER_ID: 'ac-mount',
         LANGUAGE: getSDKTranslations(),
@@ -111,8 +107,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         onError: handleIDCaptureError,
         onUserExit: handleIDCaptureExit,
         DEBUG: false,
-        DESKTOP_MODE: !isMobile,
-        APPROVAL: true, // Show approval screen
+        DESKTOP_MODE: isDevMode && !isMobile,
+        APPROVAL: true,
         ALLOWED_DOCUMENTS: {
           IDENTITY_CARD: ['FRONT', 'BACK'],
           PASSPORT: ['FRONT'],
@@ -121,39 +117,41 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       });
 
     } catch (err) {
-      console.error('❌ [SDKVerification] Failed to start ID capture:', err);
-      console.error('❌ [SDKVerification] Error message:', err.message);
-      console.error('❌ [SDKVerification] Error stack:', err.stack);
-      console.error('❌ [SDKVerification] Full error object:', JSON.stringify(err, null, 2));
-      
-      const friendlyError = err.message?.includes('credentials') 
-        ? 'Verification service is temporarily unavailable. Please try again later.'
-        : err.message || 'Failed to initialize document scanner. Please check camera permissions.';
-      setError(friendlyError);
+      console.error('❌ Failed to start ID capture:', err.message);
+      setError(err.message || 'Failed to initialize document scanner');
       setStep('failed');
     }
   };
 
   const handleIDCaptureComplete = async (data) => {
     try {
-      console.log('✅ [SDKVerification] ID capture completed');
-      console.log('📸 [SDKVerification] Captured images count:', data.image?.length);
+      console.log('✅ ID capture completed, images count:', data.image?.length);
       setStep('id_processing');
 
-      // Extract images from data - AutoCapture returns data.image (array of base64 strings)
+      // Extract images with proper type handling
       const images = data.image.map((base64String, index) => {
-        // Remove data URL prefix if present
         const base64Data = base64String.includes(',') 
           ? base64String.split(',')[1] 
           : base64String;
 
+        // Preserve SDK metadata for type determination
+        let imageType = 'IDENTITY_CARD';
+        if (data.meta?.[index]) {
+          const meta = data.meta[index];
+          if (meta.force_capture) {
+            imageType = 'FORCED';
+          } else if (meta.page_type) {
+            imageType = meta.page_type;
+          } else if (meta.document_type) {
+            imageType = meta.document_type;
+          }
+        }
+
         return {
           data: base64Data,
-          type: data.meta?.[index]?.force_capture ? 'FORCED' : 'IDENTITY_CARD'
+          type: imageType
         };
       });
-
-      setIdImages(images);
 
       // Clean up AutoCapture instance
       if (acInstanceRef.current) {
@@ -162,27 +160,24 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       }
 
       // Submit images to DataChecker
-      console.log('📤 [SDKVerification] Submitting ID images...');
+      console.log('📤 Submitting ID images...');
       const submitResponse = await base44.functions.invoke('datacheckerSubmitIDVerify', {
-        transactionId: idTransactionId,
+        transactionId: idTxRef.current,
         images
       });
-      
-      console.log('📥 [SDKVerification] Submit response:', submitResponse);
 
       if (submitResponse.data.error) {
-        console.error('❌ [SDKVerification] Submit error:', submitResponse.data.error);
         throw new Error(submitResponse.data.error);
       }
 
-      console.log('✅ [SDKVerification] ID images submitted successfully');
+      console.log('✅ ID images submitted successfully');
 
-      // Move to face capture
-      setTimeout(() => startFaceCapture(), 1000);
+      // Poll for ID result
+      setStep('id_polling');
+      await pollForIDResult();
 
     } catch (err) {
-      console.error('❌ [SDKVerification] ID processing error:', err);
-      console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
+      console.error('❌ ID processing error:', err.message);
       setError(err.message || 'Failed to process document');
       setStep('failed');
     }
@@ -219,39 +214,104 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     setStep('failed');
   };
 
+  // Poll for ID result with exponential backoff
+  const pollForIDResult = async () => {
+    console.log('🔄 Polling for ID result...');
+    
+    let delay = 2000; // Start with 2 seconds
+    const maxDelay = 10000; // Max 10 seconds
+    const maxDuration = 3 * 60 * 1000; // 3 minutes total
+    const startTime = Date.now();
+
+    const poll = async () => {
+      try {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > maxDuration) {
+          throw new Error('Verification timeout - please try again');
+        }
+
+        const pollResponse = await base44.functions.invoke('datacheckerPoll', {
+          transactionId: idTxRef.current,
+          customerReference: customerReferenceRef.current,
+          expectedProduct: 'IDV_LITE'
+        });
+
+        console.log('📥 ID poll response:', pollResponse.data);
+
+        if (pollResponse.data.completed && pollResponse.data.resultId) {
+          console.log('✅ ID verification completed, resultId:', pollResponse.data.resultId);
+          
+          // Get the detailed result
+          const resultResponse = await base44.functions.invoke('datacheckerGetResult', {
+            resultId: pollResponse.data.resultId,
+            expectedProduct: 'IDV_LITE'
+          });
+
+          console.log('✅ ID result retrieved');
+
+          // Extract COMPARE image from result
+          const compareImage = resultResponse.data.images?.find(
+            img => img.type === 'COMPARE' || img.pageType === 'COMPARE'
+          );
+
+          if (!compareImage) {
+            throw new Error('No COMPARE image found in ID verification result');
+          }
+
+          compareImageRef.current = compareImage.data;
+          console.log('✅ COMPARE image extracted from ID result');
+
+          // Check if ID was approved
+          if (!resultResponse.data.identityApproved) {
+            throw new Error('Document verification failed');
+          }
+
+          // Move to face capture
+          setTimeout(() => startFaceCapture(), 1000);
+        } else {
+          // Continue polling with exponential backoff
+          delay = Math.min(delay * 1.5, maxDelay);
+          pollTimeoutRef.current = setTimeout(poll, delay);
+        }
+
+      } catch (err) {
+        console.error('❌ ID polling error:', err.message);
+        setError(err.message || 'Failed to verify identity');
+        setStep('failed');
+      }
+    };
+
+    poll();
+  };
+
   // Start face capture
   const startFaceCapture = async () => {
     try {
-      console.log('👤 [SDKVerification] Starting face capture...');
+      console.log('👤 Starting face capture...');
       setStep('face_capture');
       setError('');
 
-      // Get SDK token for FaceVerify
-      // Use CPF for Brazil, otherwise use the ID value (passport, license, sedula)
-      const docIdentifier = userData.cpf || userData.id_value || 'unknown';
-      console.log('🔑 [SDKVerification] Requesting FaceVerify SDK token...');
-      
+      // Get SDK token for FaceVerify with SAME customerReference
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
         services: 'FACE_VERIFY',
-        customerReference: `5bulls_${userData.country}_${docIdentifier}_${Date.now()}`,
+        customerReference: customerReferenceRef.current,
         numberOfChallenges: 2,
         validateWatermark: true
       });
-      
-      console.log('✅ [SDKVerification] FaceVerify token response:', tokenResponse);
 
       if (tokenResponse.data.error) {
         throw new Error(tokenResponse.data.error);
       }
 
       const { token, transactionId } = tokenResponse.data;
-      setFaceTransactionId(transactionId);
-
-      console.log('🎫 Got FaceVerify SDK token, transactionId:', transactionId);
+      faceTxRef.current = transactionId;
+      console.log('✅ Got FaceVerify SDK token, transactionId:', transactionId);
 
       // Initialize FaceVerify
       const FV = new FaceVerify();
       fvInstanceRef.current = FV;
+
+      const isDevMode = window.location.hostname === 'localhost' || window.location.hostname.includes('staging');
 
       await FV.init({
         CONTAINER_ID: 'fv-mount',
@@ -261,25 +321,21 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         onError: handleFaceCaptureError,
         onUserExit: handleFaceCaptureExit,
         DEBUG: false,
-        DESKTOP_MODE: !isMobile
+        DESKTOP_MODE: isDevMode && !isMobile
       });
 
-      // Start the face capture
       FV.start();
 
     } catch (err) {
-      console.error('❌ Failed to start face capture:', err);
-      const friendlyError = err.message?.includes('credentials')
-        ? 'Verification service is temporarily unavailable. Please try again later.'
-        : err.message || 'Failed to initialize face verification. Please check camera permissions.';
-      setError(friendlyError);
+      console.error('❌ Failed to start face capture:', err.message);
+      setError(err.message || 'Failed to initialize face verification');
       setStep('failed');
     }
   };
 
   const handleFaceCaptureComplete = async (data) => {
     try {
-      console.log('✅ Face capture completed:', data);
+      console.log('✅ Face capture completed');
       setStep('face_processing');
 
       // Clean up FaceVerify instance
@@ -288,15 +344,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         fvInstanceRef.current = null;
       }
 
-      // For face verification, we need to submit COMPARE + LIVE images
-      // Use the first ID image as COMPARE (ideally the front with face)
-      const compareImage = idImages[0];
-
-      // FaceVerify SDK returns data.images (array of captured face images)
+      // Build images array with COMPARE first, then LIVE images
       const images = [
         {
           type: 'COMPARE',
-          data: compareImage.data
+          data: compareImageRef.current
         }
       ];
 
@@ -314,11 +366,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         });
       }
 
-      setFaceImages(images);
+      console.log('📤 Submitting face verification with COMPARE + LIVE images...');
 
-      // Submit face verification with compare image and valid_challenges if available
+      // Submit face verification
       const submitPayload = {
-        transactionId: faceTransactionId,
+        transactionId: faceTxRef.current,
         images
       };
 
@@ -334,11 +386,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
       console.log('✅ Face images submitted successfully');
 
-      // Now poll for both results
-      pollForResults();
+      // Poll for face result
+      setStep('face_polling');
+      await pollForFaceResult();
 
     } catch (err) {
-      console.error('❌ Face processing error:', err);
+      console.error('❌ Face processing error:', err.message);
       setError(err.message || 'Failed to process face verification');
       setStep('failed');
     }
@@ -375,254 +428,107 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     setStep('failed');
   };
 
-  // Poll for verification results
-  const pollForResults = async () => {
-    console.log('🔄 [SDKVerification] Starting polling for results...');
-    console.log('🆔 [SDKVerification] ID transactionId:', idTransactionId);
-    console.log('👤 [SDKVerification] Face transactionId:', faceTransactionId);
+  // Poll for Face result with exponential backoff
+  const pollForFaceResult = async () => {
+    console.log('🔄 Polling for Face result...');
     
-    setStep('verifying');
-    
-    let idResultId = null;
-    let faceResultId = null;
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes (60 * 5 seconds)
+    let delay = 2000;
+    const maxDelay = 10000;
+    const maxDuration = 3 * 60 * 1000;
+    const startTime = Date.now();
 
-    const pollInterval = setInterval(async () => {
+    const poll = async () => {
       try {
-        attempts++;
-        console.log(`🔄 [SDKVerification] Poll attempt ${attempts}/${maxAttempts}`);
-
-        // Poll for ID result if not yet obtained
-        if (!idResultId && idTransactionId) {
-          console.log('🔍 [SDKVerification] Polling for ID result...');
-          const idPoll = await base44.functions.invoke('datacheckerPoll', {
-            transactionId: idTransactionId
-          });
-          
-          console.log('📥 [SDKVerification] ID poll response:', idPoll.data);
-
-          if (idPoll.data.completed && idPoll.data.results?.length > 0) {
-            idResultId = idPoll.data.results[0].resultId;
-            console.log('✅ [SDKVerification] ID verification completed, resultId:', idResultId);
-          }
-        }
-
-        // Poll for face result if not yet obtained
-        if (!faceResultId && faceTransactionId) {
-          console.log('🔍 [SDKVerification] Polling for face result...');
-          const facePoll = await base44.functions.invoke('datacheckerPoll', {
-            transactionId: faceTransactionId
-          });
-          
-          console.log('📥 [SDKVerification] Face poll response:', facePoll.data);
-
-          if (facePoll.data.completed && facePoll.data.results?.length > 0) {
-            faceResultId = facePoll.data.results[0].resultId;
-            console.log('✅ [SDKVerification] Face verification completed, resultId:', faceResultId);
-          }
-        }
-
-        // If both results are ready, fetch and process them
-        if (idResultId && faceResultId) {
-          console.log('🎉 [SDKVerification] Both results ready, processing...');
-          clearInterval(pollInterval);
-          await processResults(idResultId, faceResultId);
-        }
-
-        // Timeout after max attempts
-        if (attempts >= maxAttempts) {
-          console.error('⏱️ [SDKVerification] Polling timeout reached');
-          clearInterval(pollInterval);
+        const elapsed = Date.now() - startTime;
+        if (elapsed > maxDuration) {
           throw new Error('Verification timeout - please try again');
         }
 
+        const pollResponse = await base44.functions.invoke('datacheckerPoll', {
+          transactionId: faceTxRef.current,
+          customerReference: customerReferenceRef.current,
+          expectedProduct: 'FACE_VERIFY'
+        });
+
+        console.log('📥 Face poll response:', pollResponse.data);
+
+        if (pollResponse.data.completed && pollResponse.data.resultId) {
+          console.log('✅ Face verification completed, resultId:', pollResponse.data.resultId);
+          
+          // Get the detailed result
+          const resultResponse = await base44.functions.invoke('datacheckerGetResult', {
+            resultId: pollResponse.data.resultId,
+            expectedProduct: 'FACE_VERIFY'
+          });
+
+          console.log('✅ Face result retrieved');
+
+          // Final approval decision
+          const finalApproved = resultResponse.data.faceApproved === true;
+
+          if (finalApproved) {
+            console.log('🎉 Verification successful!');
+            setStep('success');
+            
+            const resultData = {
+              verified: true,
+              idTransactionId: idTxRef.current,
+              faceTransactionId: faceTxRef.current,
+              customerReference: customerReferenceRef.current
+            };
+            
+            setTimeout(() => onComplete(resultData), 2000);
+          } else {
+            throw new Error('Face verification failed');
+          }
+        } else {
+          // Continue polling with exponential backoff
+          delay = Math.min(delay * 1.5, maxDelay);
+          pollTimeoutRef.current = setTimeout(poll, delay);
+        }
+
       } catch (err) {
-        clearInterval(pollInterval);
-        console.error('❌ [SDKVerification] Polling error:', err);
-        console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
-        setError(err.message || 'Failed to verify identity');
+        console.error('❌ Face polling error:', err.message);
+        setError(err.message || 'Failed to verify face');
         setStep('failed');
       }
-    }, 5000);
-  };
+    };
 
-  const processResults = async (idResultId, faceResultId) => {
-    try {
-      console.log('🔄 [SDKVerification] Fetching ID result...');
-      // Fetch ID result
-      const idResult = await base44.functions.invoke('datacheckerGetResult', {
-        resultId: idResultId
-      });
-      console.log('✅ [SDKVerification] ID result fetched');
-
-      console.log('🔄 [SDKVerification] Fetching face result...');
-      // Fetch face result
-      const faceResult = await base44.functions.invoke('datacheckerGetResult', {
-        resultId: faceResultId
-      });
-      console.log('✅ [SDKVerification] Face result fetched');
-
-      console.log('📋 [SDKVerification] ID Result:', idResult.data);
-      console.log('📋 [SDKVerification] Face Result:', faceResult.data);
-
-      const idApproved = idResult.data.approved;
-      const faceApproved = faceResult.data.approved;
-
-      const resultData = {
-        verified: idApproved && faceApproved,
-        idTransactionId,
-        faceTransactionId,
-        idResult: idResult.data,
-        faceResult: faceResult.data
-      };
-
-      // Skip session update during onboarding - no user exists yet
-
-      if (idApproved && faceApproved) {
-        console.log('✅ [SDKVerification] Verification successful!');
-        setStep('success');
-        setTimeout(() => {
-          console.log('🎉 [SDKVerification] Calling onComplete callback');
-          onComplete(resultData);
-        }, 2000);
-      } else {
-        console.error('❌ [SDKVerification] Verification failed');
-        console.error('❌ [SDKVerification] ID approved:', idApproved, 'Face approved:', faceApproved);
-        setStep('failed');
-        setError(
-          !idApproved 
-            ? (language === 'pt' ? 'Documento não aprovado' : 'Document not approved')
-            : (language === 'pt' ? 'Verificação facial não aprovada' : 'Face verification not approved')
-        );
-      }
-
-    } catch (err) {
-      console.error('❌ [SDKVerification] Error processing results:', err);
-      console.error('❌ [SDKVerification] Error details:', err.message, err.stack);
-      setError(err.message || 'Failed to retrieve verification results');
-      setStep('failed');
-    }
+    poll();
   };
 
   const handleRetry = () => {
     setError('');
     setRetryCount(prev => prev + 1);
     setStep('init');
-    setIdTransactionId(null);
-    setFaceTransactionId(null);
-    setIdImages([]);
-    setFaceImages([]);
-  };
-
-  // Create verification session for desktop (QR code flow)
-  const createVerificationSession = async () => {
-    try {
-      const sessionData = {
-        session_id: `sdk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        user_data: userData,
-        verification_mode: 'sdk',
-        status: 'pending',
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min expiry
-      };
-
-      // Skip session creation during onboarding - no user exists yet
-      setSessionId(sessionData.session_id);
-
-      // Create verification URL for mobile
-      const baseUrl = window.location.origin;
-      const url = `${baseUrl}${window.location.pathname}?verificationSession=${sessionData.session_id}`;
-      setVerificationUrl(url);
-
-      // Generate QR code locally using qrcode library
-      const qrDataUrl = await QRCodeLib.toDataURL(url, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-      setQrCodeUrl(qrDataUrl);
-
-      setStep('qr_display');
-      
-      // Start polling for session completion
-      startSessionPolling(sessionData.session_id);
-
-    } catch (err) {
-      console.error('❌ Failed to create verification session:', err);
-      setError('Failed to create verification session. Please refresh and try again.');
-      setStep('failed');
-    }
-  };
-
-  // Start verification for QR code scan (userData already loaded by parent)
-  const startQRVerification = async (sessionIdParam) => {
-    try {
-      console.log('📱 Starting QR code verification with session:', sessionIdParam);
-      console.log('📋 Using userData from parent:', userData);
-      
-      // Validate that we have the required userData
-      if (!userData || !userData.country || !userData.full_name) {
-        throw new Error('Session data not loaded properly. Please scan the QR code again.');
-      }
-      
-      // Skip session update during onboarding - no user exists yet
-
-      // Start verification with userData from parent
-      console.log('🎬 Starting ID capture with userData:', userData);
-      await startIDCapture();
-    } catch (err) {
-      console.error('❌ Failed to start QR verification:', err);
-      setError(err.message || 'Failed to start verification. Please scan the QR code again.');
-      setStep('failed');
-    }
-  };
-
-  // Poll for session completion (desktop flow)
-  // NOTE: During onboarding, sessions are not stored in DB since no user exists
-  // This would need to be refactored to use a different mechanism (e.g., localStorage)
-  const startSessionPolling = (sessionIdParam) => {
-    console.log('⚠️ Session polling not available during onboarding (no user exists yet)');
-    // For now, desktop users should complete verification on same device
-    // Or implement a server-side temporary session store
+    customerReferenceRef.current = null;
+    idTxRef.current = null;
+    faceTxRef.current = null;
+    compareImageRef.current = null;
   };
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+      if (acInstanceRef.current) {
+        acInstanceRef.current.remove();
+      }
+      if (fvInstanceRef.current) {
+        fvInstanceRef.current.stop();
       }
     };
   }, []);
 
   // Auto-start verification when component mounts
   useEffect(() => {
-    console.log('🚀 Starting verification flow...', { step, isMobile, userData });
-    
     if (step === 'init') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionIdFromUrl = urlParams.get('verificationSession');
-      
-      if (sessionIdFromUrl) {
-        // Mobile QR code scan - userData already loaded by Onboarding page
-        console.log('📱 QR code scan detected - userData already loaded by parent');
-        setSessionId(sessionIdFromUrl);
-        startQRVerification(sessionIdFromUrl);
-      } else if (!isMobile) {
-        // Desktop - QR code flow not available during onboarding (no user/session storage)
-        // User must complete verification on the same device
-        console.log('💻 Desktop detected - starting direct verification (QR not available during onboarding)');
-        startIDCapture();
-      } else {
-        // Direct mobile access (no QR code)
-        console.log('📱 Direct mobile access - starting camera capture');
-        startIDCapture();
-      }
+      console.log('🚀 Starting verification flow...');
+      startIDCapture();
     }
-  }, [step, isMobile]);
+  }, [step]);
 
   if (step === 'init') {
     return (
@@ -656,12 +562,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   }
 
   if (step === 'failed') {
-    const isSDKLoadError = error && (
-      error.includes('SDK') || 
-      error.includes('unavailable') || 
-      error.includes('não disponíveis')
-    );
-    
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -674,9 +574,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         </h3>
         <p className="text-white/60 mb-4">{error}</p>
         
-
-        
-        {!isSDKLoadError && retryCount < 3 && (
+        {retryCount < 3 && (
           <Button onClick={handleRetry} className="gold-gradient text-black">
             {language === 'pt' ? 'Tentar Novamente' : 'Try Again'}
           </Button>
@@ -685,8 +583,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         {retryCount >= 3 && (
           <p className="text-white/40 text-sm mt-4">
             {language === 'pt' 
-              ? 'Muitas tentativas. Use o "Modo Link" ou contate o suporte.' 
-              : 'Too many attempts. Use "Link Mode" or contact support.'}
+              ? 'Muitas tentativas. Entre em contato com o suporte.' 
+              : 'Too many attempts. Please contact support.'}
           </p>
         )}
       </motion.div>
@@ -703,13 +601,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           </h3>
           <p className="text-white/60 text-sm">
             {language === 'pt' 
-              ? 'Posicione seu documento dentro do quadro. A captura será automática.' 
-              : 'Position your document within the frame. Capture will be automatic.'}
+              ? 'Posicione seu documento dentro do quadro.' 
+              : 'Position your document within the frame.'}
           </p>
         </div>
         <div 
-          id="ac-mount" 
-          ref={acContainerRef}
+          id="ac-mount"
           className="rounded-xl overflow-hidden"
           style={{ maxWidth: '500px', margin: '0 auto' }}
         />
@@ -717,12 +614,15 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     );
   }
 
-  if (step === 'id_processing') {
+  if (step === 'id_processing' || step === 'id_polling') {
     return (
       <div className="text-center py-8">
         <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
         <p className="text-white font-medium">
           {language === 'pt' ? 'Processando documento...' : 'Processing document...'}
+        </p>
+        <p className="text-white/40 text-sm mt-2">
+          {language === 'pt' ? 'Isso pode levar alguns segundos' : 'This may take a few seconds'}
         </p>
       </div>
     );
@@ -738,13 +638,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           </h3>
           <p className="text-white/60 text-sm">
             {language === 'pt' 
-              ? 'Siga as instruções na tela e mova sua cabeça conforme solicitado.' 
-              : 'Follow the on-screen instructions and move your head as requested.'}
+              ? 'Siga as instruções na tela.' 
+              : 'Follow the on-screen instructions.'}
           </p>
         </div>
         <div 
-          id="fv-mount" 
-          ref={fvContainerRef}
+          id="fv-mount"
           className="rounded-xl overflow-hidden"
           style={{ maxWidth: '500px', margin: '0 auto' }}
         />
@@ -752,7 +651,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     );
   }
 
-  if (step === 'face_processing' || step === 'verifying') {
+  if (step === 'face_processing' || step === 'face_polling') {
     return (
       <div className="text-center py-8">
         <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
@@ -763,72 +662,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           {language === 'pt' ? 'Isso pode levar alguns segundos' : 'This may take a few seconds'}
         </p>
       </div>
-    );
-  }
-
-  // Desktop QR Code display
-  if (step === 'qr_display') {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-center space-y-6"
-      >
-        <div className="mb-6">
-          <Smartphone className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">
-            {language === 'pt' ? 'Escaneie com seu Celular' : 'Scan with Your Phone'}
-          </h3>
-          <p className="text-white/60">
-            {language === 'pt' 
-              ? 'Use a câmera do seu celular para escanear o código QR e continuar a verificação.' 
-              : 'Use your phone camera to scan the QR code and continue verification.'}
-          </p>
-        </div>
-
-        {/* QR Code */}
-        {qrCodeUrl ? (
-          <div className="bg-white p-6 rounded-xl mx-auto inline-block">
-            <img
-              src={qrCodeUrl}
-              alt="QR Code for verification"
-              className="w-64 h-64"
-            />
-          </div>
-        ) : (
-          <div className="bg-white p-6 rounded-xl mx-auto inline-block w-64 h-64 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-          </div>
-        )}
-
-        <div className="flex items-center justify-center gap-2 text-amber-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">
-            {language === 'pt' 
-              ? 'Aguardando verificação no celular...' 
-              : 'Waiting for verification on phone...'}
-          </span>
-        </div>
-
-        <div className="text-white/40 text-sm space-y-2">
-          <p>
-            {language === 'pt' 
-              ? 'Não consegue escanear?' 
-              : "Can't scan?"}
-          </p>
-          <button 
-            onClick={() => {
-              if (verificationUrl) {
-                navigator.clipboard.writeText(verificationUrl);
-                alert(language === 'pt' ? 'Link copiado!' : 'Link copied!');
-              }
-            }}
-            className="text-amber-400 hover:underline"
-          >
-            {language === 'pt' ? 'Copiar link de verificação' : 'Copy verification link'}
-          </button>
-        </div>
-      </motion.div>
     );
   }
 

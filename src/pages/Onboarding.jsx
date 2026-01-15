@@ -220,20 +220,31 @@ export default function Onboarding() {
 
   // Passport validation
   const validatePassport = (value, country) => {
+    console.log('🔍 Validating passport:', { value, country, length: value.length });
+    let isValid = false;
+    
     switch (country) {
       case 'AU': // Australian passport: 2 letters + 7 digits
-        return /^[A-Z]{2}\d{7}$/.test(value);
+        isValid = /^[A-Z]{2}\d{7}$/.test(value);
+        console.log('🇦🇺 AU validation:', { value, regex: /^[A-Z]{2}\d{7}$/.test(value), isValid });
+        break;
       case 'NL': // Dutch passport: 2 letters + 7 digits
-        return /^[A-Z]{2}\d{7}$/.test(value);
+        isValid = /^[A-Z]{2}\d{7}$/.test(value);
+        break;
       case 'CW': // Curacao passport (similar to Dutch)
-        return /^[A-Z]{2}\d{7}$/.test(value);
+        isValid = /^[A-Z]{2}\d{7}$/.test(value);
+        break;
       default:
-        return value.length >= 6;
+        isValid = value.length >= 6;
     }
+    
+    console.log('✅ Validation result:', isValid);
+    return isValid;
   };
 
   const handlePassportChange = (value) => {
     const trimmedValue = value.trim().toUpperCase();
+    console.log('📝 Passport change:', { original: value, trimmed: trimmedValue, country: selectedCountry });
     setPassport(trimmedValue);
     setPassportError('');
     setPassportValid(false);
@@ -242,7 +253,10 @@ export default function Onboarding() {
       setPassportValidating(true);
       
       setTimeout(() => {
-        if (validatePassport(trimmedValue, selectedCountry)) {
+        const isValid = validatePassport(trimmedValue, selectedCountry);
+        console.log('⏰ Validation complete:', { isValid, value: trimmedValue, country: selectedCountry });
+        
+        if (isValid) {
           setPassportValid(true);
         } else {
           setPassportError('Invalid passport number format');

@@ -233,15 +233,16 @@ export default function Onboarding() {
   };
 
   const handlePassportChange = (value) => {
-    setPassport(value);
+    const trimmedValue = value.trim().toUpperCase();
+    setPassport(trimmedValue);
     setPassportError('');
     setPassportValid(false);
     
-    if (value.length >= 6) {
+    if (trimmedValue.length >= 6) {
       setPassportValidating(true);
       
       setTimeout(() => {
-        if (validatePassport(value, selectedCountry)) {
+        if (validatePassport(trimmedValue, selectedCountry)) {
           setPassportValid(true);
         } else {
           setPassportError('Invalid passport number format');

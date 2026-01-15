@@ -12,7 +12,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   const [step, setStep] = useState('init'); // init, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
-  const [debugInfo, setDebugInfo] = useState(null);
   
   // Use refs to avoid race conditions
   const customerReferenceRef = useRef(null);
@@ -253,67 +252,33 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             expectedProduct: 'IDV_LITE'
           });
 
-          console.log('✅ ID result retrieved');
-
-          // Store debug info for display
-          const debugData = {
+          console.log('✅ ID result retrieved:', JSON.stringify({
             identityApproved: resultResponse.data.identityApproved,
-            imagesCount: resultResponse.data.images?.length || 0,
-            imageTypes: resultResponse.data.images?.map(img => ({
-              type: img.type,
-              pageType: img.pageType,
-              hasData: !!img.data,
-              dataLength: img.data?.length
-            })) || []
-          };
-          setDebugInfo(debugData);
-          console.log('Debug info:', JSON.stringify(debugData, null, 2));
+            imagesCount: resultResponse.data.images?.length,
+            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType)
+          }));
 
-          // Check if ID was approved FIRST
-          if (!resultResponse.data.identityApproved) {
-            console.error('❌ Identity not approved');
-            throw new Error(language === 'pt' 
-              ? 'Documento não foi aprovado. Por favor, tente novamente com um documento válido.'
-              : 'Document was not approved. Please try again with a valid document.');
-          }
-
-          // Check if we have images
-          if (!resultResponse.data.images || resultResponse.data.images.length === 0) {
-            console.error('❌ No images returned from ID verification');
-            throw new Error(language === 'pt'
-              ? 'Nenhuma foto foi retornada. Por favor, tente novamente.'
-              : 'No images were returned. Please try again.');
-          }
-
-          // Extract COMPARE image from result - try multiple strategies
-          let compareImage = resultResponse.data.images?.find(
+          // Extract COMPARE image from result
+          const compareImage = resultResponse.data.images?.find(
             img => img.type === 'COMPARE' || img.pageType === 'COMPARE'
           );
 
-          // Fallback 1: Look for PORTRAIT type
           if (!compareImage) {
-            console.log('⚠️ No COMPARE type found, trying PORTRAIT...');
-            compareImage = resultResponse.data.images?.find(
-              img => img.type === 'PORTRAIT' || img.pageType === 'PORTRAIT'
-            );
+            console.error('❌ No COMPARE image found. Available images:', resultResponse.data.images?.map(img => ({
+              type: img.type,
+              pageType: img.pageType
+            })));
+            throw new Error('No COMPARE image found in ID verification result');
           }
 
-          // Fallback 2: Use the first image if it exists
-          if (!compareImage && resultResponse.data.images?.length > 0) {
-            console.log('⚠️ No PORTRAIT found, using first available image...');
-            compareImage = resultResponse.data.images[0];
-          }
-
-          if (!compareImage || !compareImage.data) {
-            console.error('❌ No usable image found');
-            throw new Error(language === 'pt'
-              ? 'Não foi possível extrair a foto do documento. Por favor, tente novamente.'
-              : 'Could not extract face image from document. Please try again.');
-          }
-
-          console.log('✅ Using image for face comparison, type:', compareImage.type || compareImage.pageType);
           compareImageRef.current = compareImage.data;
           console.log('✅ COMPARE image extracted from ID result');
+
+          // Check if ID was approved
+          if (!resultResponse.data.identityApproved) {
+            console.error('❌ Identity not approved');
+            throw new Error('Document verification failed');
+          }
 
           console.log('🎉 ID verification complete! Moving to face capture in 1s...');
 
@@ -628,17 +593,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         </h3>
         <p className="text-white/60 mb-4">{error}</p>
         
-        {debugInfo && (
-          <div className="mt-4 p-4 bg-slate-800 rounded-lg text-left max-w-md mx-auto">
-            <p className="text-xs text-white/70 mb-2 font-mono">Debug Info:</p>
-            <pre className="text-xs text-white/60 overflow-auto">
-              {JSON.stringify(debugInfo, null, 2)}
-            </pre>
-          </div>
-        )}
-        
         {retryCount < 3 && (
-          <Button onClick={handleRetry} className="gold-gradient text-black mt-4">
+          <Button onClick={handleRetry} className="gold-gradient text-black">
             {language === 'pt' ? 'Tentar Novamente' : 'Try Again'}
           </Button>
         )}

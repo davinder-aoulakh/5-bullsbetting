@@ -125,11 +125,12 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
   const handleIDCaptureComplete = async (data) => {
     try {
-      console.log('✅ ID capture completed, images count:', data.image?.length);
+      console.log('✅ ID capture completed, full data:', data);
+      console.log('Images count:', data.images?.length);
       setStep('id_processing');
 
       // Extract images with proper type handling
-      const images = data.image.map((base64String, index) => {
+      const images = data.images.map((base64String, index) => {
         const base64Data = base64String.includes(',') 
           ? base64String.split(',')[1] 
           : base64String;
@@ -152,6 +153,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           type: imageType
         };
       });
+
+      console.log('📸 Processed images:', images.map(img => ({ type: img.type, dataLength: img.data?.length })));
 
       // Clean up AutoCapture instance
       if (acInstanceRef.current) {

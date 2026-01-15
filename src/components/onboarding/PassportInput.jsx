@@ -23,8 +23,13 @@ export default function PassportInput({
   };
   
   const handleInputChange = (e) => {
-    const newValue = e.target.value.trim().toUpperCase();
-    console.log('🎫 Input change:', { original: e.target.value, processed: newValue });
+    // Remove ALL whitespace (including invisible characters) and convert to uppercase
+    const newValue = e.target.value.replace(/\s/g, '').toUpperCase();
+    console.log('🎫 Input change:', { 
+      original: e.target.value, 
+      processed: newValue,
+      charCodes: [...newValue].map(c => c.charCodeAt(0))
+    });
     onChange(newValue);
   };
 

@@ -220,22 +220,31 @@ export default function Onboarding() {
 
   // Passport validation
   const validatePassport = (value, country) => {
-    console.log('🔍 Validating passport:', { value, country, length: value.length });
+    // Clean the value again to be absolutely sure
+    const cleanValue = value.replace(/\s/g, '').toUpperCase();
+    console.log('🔍 Validating passport:', { 
+      original: value, 
+      clean: cleanValue, 
+      country, 
+      length: cleanValue.length,
+      charCodes: [...cleanValue].map(c => c.charCodeAt(0))
+    });
+    
     let isValid = false;
     
     switch (country) {
       case 'AU': // Australian passport: 2 letters + 7 digits
-        isValid = /^[A-Z]{2}\d{7}$/.test(value);
-        console.log('🇦🇺 AU validation:', { value, regex: /^[A-Z]{2}\d{7}$/.test(value), isValid });
+        isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);
+        console.log('🇦🇺 AU validation:', { cleanValue, regex: /^[A-Z]{2}\d{7}$/.test(cleanValue), isValid });
         break;
       case 'NL': // Dutch passport: 2 letters + 7 digits
-        isValid = /^[A-Z]{2}\d{7}$/.test(value);
+        isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);
         break;
       case 'CW': // Curacao passport (similar to Dutch)
-        isValid = /^[A-Z]{2}\d{7}$/.test(value);
+        isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);
         break;
       default:
-        isValid = value.length >= 6;
+        isValid = cleanValue.length >= 6;
     }
     
     console.log('✅ Validation result:', isValid);

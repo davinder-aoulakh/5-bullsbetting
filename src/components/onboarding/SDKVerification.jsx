@@ -255,22 +255,35 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           console.log('✅ ID result retrieved:', JSON.stringify({
             identityApproved: resultResponse.data.identityApproved,
             imagesCount: resultResponse.data.images?.length,
-            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType)
-          }));
+            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType),
+            fullImages: resultResponse.data.images
+          }, null, 2));
 
-          // Extract COMPARE image from result
-          const compareImage = resultResponse.data.images?.find(
+          // Extract COMPARE image from result - try multiple strategies
+          let compareImage = resultResponse.data.images?.find(
             img => img.type === 'COMPARE' || img.pageType === 'COMPARE'
           );
 
+          // Fallback 1: Look for PORTRAIT type
           if (!compareImage) {
-            console.error('❌ No COMPARE image found. Available images:', resultResponse.data.images?.map(img => ({
-              type: img.type,
-              pageType: img.pageType
-            })));
-            throw new Error('No COMPARE image found in ID verification result');
+            console.log('⚠️ No COMPARE type found, trying PORTRAIT...');
+            compareImage = resultResponse.data.images?.find(
+              img => img.type === 'PORTRAIT' || img.pageType === 'PORTRAIT'
+            );
           }
 
+          // Fallback 2: Use the first image if it exists
+          if (!compareImage && resultResponse.data.images?.length > 0) {
+            console.log('⚠️ No PORTRAIT found, using first available image...');
+            compareImage = resultResponse.data.images[0];
+          }
+
+          if (!compareImage) {
+            console.error('❌ No usable image found. Full result:', JSON.stringify(resultResponse.data, null, 2));
+            throw new Error('No face image found in ID verification result. Please ensure your document photo is clear.');
+          }
+
+          console.log('✅ Using image for face comparison, type:', compareImage.type || compareImage.pageType);
           compareImageRef.current = compareImage.data;
           console.log('✅ COMPARE image extracted from ID result');
 

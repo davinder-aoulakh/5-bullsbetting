@@ -258,16 +258,32 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           // Store debug info for display
           const debugData = {
             identityApproved: resultResponse.data.identityApproved,
-            imagesCount: resultResponse.data.images?.length,
+            imagesCount: resultResponse.data.images?.length || 0,
             imageTypes: resultResponse.data.images?.map(img => ({
               type: img.type,
               pageType: img.pageType,
               hasData: !!img.data,
               dataLength: img.data?.length
-            }))
+            })) || []
           };
           setDebugInfo(debugData);
           console.log('Debug info:', JSON.stringify(debugData, null, 2));
+
+          // Check if ID was approved FIRST
+          if (!resultResponse.data.identityApproved) {
+            console.error('❌ Identity not approved');
+            throw new Error(language === 'pt' 
+              ? 'Documento não foi aprovado. Por favor, tente novamente com um documento válido.'
+              : 'Document was not approved. Please try again with a valid document.');
+          }
+
+          // Check if we have images
+          if (!resultResponse.data.images || resultResponse.data.images.length === 0) {
+            console.error('❌ No images returned from ID verification');
+            throw new Error(language === 'pt'
+              ? 'Nenhuma foto foi retornada. Por favor, tente novamente.'
+              : 'No images were returned. Please try again.');
+          }
 
           // Extract COMPARE image from result - try multiple strategies
           let compareImage = resultResponse.data.images?.find(
@@ -288,20 +304,16 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             compareImage = resultResponse.data.images[0];
           }
 
-          if (!compareImage) {
+          if (!compareImage || !compareImage.data) {
             console.error('❌ No usable image found');
-            throw new Error('No face image found in ID verification result. Please ensure your document photo is clear.');
+            throw new Error(language === 'pt'
+              ? 'Não foi possível extrair a foto do documento. Por favor, tente novamente.'
+              : 'Could not extract face image from document. Please try again.');
           }
 
           console.log('✅ Using image for face comparison, type:', compareImage.type || compareImage.pageType);
           compareImageRef.current = compareImage.data;
           console.log('✅ COMPARE image extracted from ID result');
-
-          // Check if ID was approved
-          if (!resultResponse.data.identityApproved) {
-            console.error('❌ Identity not approved');
-            throw new Error('Document verification failed');
-          }
 
           console.log('🎉 ID verification complete! Moving to face capture in 1s...');
 

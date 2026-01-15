@@ -229,6 +229,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     const poll = async () => {
       try {
         const elapsed = Date.now() - startTime;
+        console.log(`⏱️ Polling ID result... elapsed: ${(elapsed/1000).toFixed(1)}s, delay: ${delay}ms`);
+
         if (elapsed > maxDuration) {
           throw new Error('Verification timeout - please try again');
         }
@@ -239,7 +241,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           expectedProduct: 'IDV_LITE'
         });
 
-        console.log('📥 ID poll response:', pollResponse.data);
+        console.log('📥 ID poll response:', JSON.stringify(pollResponse.data, null, 2));
 
         if (pollResponse.data.completed && pollResponse.data.resultId) {
           console.log('✅ ID verification completed, resultId:', pollResponse.data.resultId);
@@ -250,7 +252,11 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             expectedProduct: 'IDV_LITE'
           });
 
-          console.log('✅ ID result retrieved');
+          console.log('✅ ID result retrieved:', JSON.stringify({
+            identityApproved: resultResponse.data.identityApproved,
+            imagesCount: resultResponse.data.images?.length,
+            imageTypes: resultResponse.data.images?.map(img => img.type || img.pageType)
+          }));
 
           // Extract COMPARE image from result
           const compareImage = resultResponse.data.images?.find(
@@ -258,6 +264,10 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           );
 
           if (!compareImage) {
+            console.error('❌ No COMPARE image found. Available images:', resultResponse.data.images?.map(img => ({
+              type: img.type,
+              pageType: img.pageType
+            })));
             throw new Error('No COMPARE image found in ID verification result');
           }
 
@@ -266,16 +276,20 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
           // Check if ID was approved
           if (!resultResponse.data.identityApproved) {
+            console.error('❌ Identity not approved');
             throw new Error('Document verification failed');
           }
 
+          console.log('🎉 ID verification complete! Moving to face capture in 1s...');
+
           // Move to face capture
           setTimeout(() => startFaceCapture(), 1000);
-        } else {
+          } else {
+          console.log('⏳ ID verification not complete yet, will retry...');
           // Continue polling with exponential backoff
           delay = Math.min(delay * 1.5, maxDelay);
           pollTimeoutRef.current = setTimeout(poll, delay);
-        }
+          }
 
       } catch (err) {
         console.error('❌ ID polling error:', err.message);
@@ -443,6 +457,8 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     const poll = async () => {
       try {
         const elapsed = Date.now() - startTime;
+        console.log(`⏱️ Polling Face result... elapsed: ${(elapsed/1000).toFixed(1)}s, delay: ${delay}ms`);
+
         if (elapsed > maxDuration) {
           throw new Error('Verification timeout - please try again');
         }
@@ -453,7 +469,7 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           expectedProduct: 'FACE_VERIFY'
         });
 
-        console.log('📥 Face poll response:', pollResponse.data);
+        console.log('📥 Face poll response:', JSON.stringify(pollResponse.data, null, 2));
 
         if (pollResponse.data.completed && pollResponse.data.resultId) {
           console.log('✅ Face verification completed, resultId:', pollResponse.data.resultId);

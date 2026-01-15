@@ -5,6 +5,7 @@ const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
   try {
+    // No authentication check - this is called during onboarding before user creation
     const body = await req.json();
     const { services, customerReference, numberOfChallenges, validateWatermark } = body;
 

@@ -1,6 +1,6 @@
 import { getOAuthToken } from './utils/datacheckerAuth.js';
 
-const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
 
 Deno.serve(async (req) => {
@@ -9,11 +9,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { transactionId, images, valid_challenges } = body;
 
-    console.log('📤 Submitting face verification:', {
-      transactionId,
-      imageCount: images?.length,
-      validChallenges: valid_challenges
-    });
+    console.log('📤 Submitting face verification, transactionId:', transactionId, 'images count:', images?.length);
 
     if (!transactionId || !images || images.length === 0) {
       return Response.json({ 
@@ -71,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await faceVerifyResponse.json();
-    console.log('✅ Face verification submitted:', result);
+    console.log('✅ Face verification submitted successfully');
 
     return Response.json(result);
 

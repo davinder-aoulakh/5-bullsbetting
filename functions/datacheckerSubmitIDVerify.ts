@@ -1,7 +1,8 @@
 import { getOAuthToken } from './utils/datacheckerAuth.js';
 
-const DATACHECKER_BASE_URL = 'https://developer.staging.datachecker.nl';
+const DATACHECKER_BASE_URL = Deno.env.get('DATACHECKER_BASE_URL') ?? 'https://developer.staging.datachecker.nl';
 const USE_MOCK = Deno.env.get('USE_DATACHECKER_MOCK_API') === 'true';
+const IDV_PRODUCT = Deno.env.get('DATACHECKER_IDV_PRODUCT') ?? 'IDV_LITE';
 
 Deno.serve(async (req) => {
   try {
@@ -9,10 +10,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { transactionId, images } = body;
 
-    console.log('📤 Submitting ID verification:', {
-      transactionId,
-      imageCount: images?.length
-    });
+    console.log('📤 Submitting ID verification, transactionId:', transactionId, 'images count:', images?.length);
 
     if (!transactionId || !images || images.length === 0) {
       return Response.json({ 
@@ -42,6 +40,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         transactionId,
+        product: IDV_PRODUCT,
         images
       })
     });
@@ -56,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await idVerifyResponse.json();
-    console.log('✅ ID verification submitted:', result);
+    console.log('✅ ID verification submitted successfully');
 
     return Response.json(result);
 

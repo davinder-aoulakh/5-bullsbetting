@@ -224,8 +224,35 @@ Deno.serve(async (req) => {
         screening_date: new Date().toISOString()
       };
 
-      const savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
-      console.log('✅ [scopeCompleteVerification] Verification saved with ID:', savedVerification.id);
+      let savedVerification;
+      try {
+        savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
+        console.log('✅ [scopeCompleteVerification] ScopeVerification saved with ID:', savedVerification.id);
+
+        // Create VerificationLog entry
+        const verificationLogRecord = {
+          user_id: verificationRecord.user_id,
+          verification_type: 'kyc_screening',
+          provider: 'scope',
+          reference_id: savedVerification.id,
+          status: 'passed',
+          result_details: {
+            message: 'No adverse records found',
+            confidence_score: 0,
+            flags: []
+          },
+          screening_date: verificationRecord.screening_date
+        };
+
+        await base44.asServiceRole.entities.VerificationLog.create(verificationLogRecord);
+        console.log('✅ [scopeCompleteVerification] VerificationLog created for Scope');
+      } catch (dbError) {
+        console.error('❌ [scopeCompleteVerification] Database save failed:', {
+          message: dbError.message,
+          stack: dbError.stack
+        });
+        throw dbError;
+      }
 
       return Response.json({
         status: 'approved',
@@ -306,11 +333,37 @@ Deno.serve(async (req) => {
       pepHit: verificationRecord.pep_hit
     });
 
+    let savedVerification;
     try {
-      const savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
-      console.log('✅ [scopeCompleteVerification] Verification saved with ID:', savedVerification.id);
+      savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
+      console.log('✅ [scopeCompleteVerification] ScopeVerification saved with ID:', savedVerification.id);
+
+      // Create a VerificationLog entry for Scope as well
+      const logStatusMap = {
+        'approved': 'passed',
+        'rejected': 'failed',
+        'manual_review': 'manual_review'
+      };
+
+      const verificationLogRecord = {
+        user_id: verificationRecord.user_id,
+        verification_type: 'kyc_screening',
+        provider: 'scope',
+        reference_id: savedVerification.id, // Link to the ScopeVerification record
+        status: logStatusMap[evaluation.status] || 'error',
+        result_details: {
+          message: evaluation.reason,
+          confidence_score: evaluation.risk_score,
+          flags: evaluation.flags_found
+        },
+        screening_date: verificationRecord.screening_date
+      };
+
+      await base44.asServiceRole.entities.VerificationLog.create(verificationLogRecord);
+      console.log('✅ [scopeCompleteVerification] VerificationLog created for Scope');
+
     } catch (dbError) {
-      console.error('❌ [scopeCompleteVerification] Database save failed:', {
+      console.error('❌ [scopeCompleteVerification] Database save failed (ScopeVerification or VerificationLog):', {
         message: dbError.message,
         stack: dbError.stack,
         record: verificationRecord

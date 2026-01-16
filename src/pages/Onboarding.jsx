@@ -467,11 +467,8 @@ export default function Onboarding() {
         timestamp: Date.now()
       }));
       
-      // Redirect to Base44's signup page
-      setTimeout(() => {
-        const returnUrl = encodeURIComponent(window.location.origin + createPageUrl('Home'));
-        window.location.href = `/auth/signup?next=${returnUrl}`;
-      }, 2000);
+      // Redirect to Base44's signup/login page, then back to Home
+      base44.auth.redirectToLogin(createPageUrl('Home'));
     }
   };
 

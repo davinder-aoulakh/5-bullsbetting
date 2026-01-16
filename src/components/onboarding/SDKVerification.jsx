@@ -689,6 +689,12 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
 
         if (pollResponse.data.completed) {
           console.log('✅ Desktop session completed!');
+          
+          // Clear polling timeout
+          if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+          }
+          
           setStep('success');
           setTimeout(() => onComplete(pollResponse.data.result), 2000);
         } else {

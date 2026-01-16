@@ -420,17 +420,30 @@ export default function Onboarding() {
     if (result.verified) {
       setLoading(true);
       try {
+        console.log('🎉 Verification complete, creating user account...');
+        
         // Create account only after successful verification
-        await base44.auth.signUp({
+        const createUserResponse = await base44.functions.invoke('createUser', {
           email,
           password,
-          full_name: userData.full_name,
-          cpf: userData.cpf,
-          phone: phone,
-          date_of_birth: userData.date_of_birth,
-          kyc_verified: true,
-          verification_date: new Date().toISOString()
+          userData: {
+            full_name: userData.full_name,
+            cpf: userData.cpf,
+            phone: phone,
+            date_of_birth: userData.date_of_birth,
+            country: userData.country,
+            id_type: userData.id_type,
+            id_value: userData.id_value,
+            kyc_verified: true,
+            verification_date: new Date().toISOString()
+          }
         });
+
+        if (createUserResponse.data.error) {
+          throw new Error(createUserResponse.data.error);
+        }
+
+        console.log('✅ User account created, logging in...');
 
         // Login automatically after registration
         await base44.auth.signIn({ email, password });

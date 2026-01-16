@@ -13,14 +13,19 @@ Deno.serve(async (req) => {
 
     console.log('📝 Creating user account for:', email);
     
-    // Use Base44 SDK to create the user
     const base44 = createClientFromRequest(req);
     
-    const result = await base44.asServiceRole.auth.signUp({
+    // Create user directly with service role
+    const signUpPayload = {
       email,
       password,
+      full_name: userData.full_name,
       ...userData
-    });
+    };
+    
+    console.log('📤 Sign up payload:', { email, full_name: userData.full_name });
+    
+    const result = await base44.asServiceRole.auth.signUp(signUpPayload);
     
     console.log('✅ User created successfully:', result?.id);
 
@@ -31,6 +36,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error creating user:', error.message);
+    console.error('❌ Full error:', error);
     return Response.json({ 
       error: error.message 
     }, { status: 500 });

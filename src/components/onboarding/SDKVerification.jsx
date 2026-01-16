@@ -525,6 +525,12 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
           });
 
           console.log('✅ Face result retrieved');
+          console.log('📊 Face result data:', JSON.stringify({
+            faceApproved: resultResponse.data.faceApproved,
+            approved: resultResponse.data.approved,
+            identityApproved: resultResponse.data.identityApproved,
+            allKeys: Object.keys(resultResponse.data)
+          }, null, 2));
 
           // Final approval decision
           const finalApproved = resultResponse.data.faceApproved === true;

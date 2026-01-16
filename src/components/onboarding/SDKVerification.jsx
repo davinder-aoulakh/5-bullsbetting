@@ -347,8 +347,6 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         DESKTOP_MODE: isDevMode && !isMobile
       });
 
-      FV.start();
-
     } catch (err) {
       console.error('❌ Failed to start face capture:', err.message);
       setError(err.message || 'Failed to initialize face verification');

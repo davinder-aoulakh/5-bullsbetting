@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       firstName,
       lastName,
       dateOfBirth: userData.date_of_birth,
-      gender: "Unknown", // We don't collect gender
+      gender: "Male", // Default gender as API doesn't accept "Unknown"
       countries: [userData.country],
       sets: {
         sanctionsCurrent: true,

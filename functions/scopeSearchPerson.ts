@@ -57,10 +57,10 @@ Deno.serve(async (req) => {
     };
 
     console.log('📤 [scopeSearchPerson] Search payload:', JSON.stringify(searchPayload, null, 2));
-    console.log('🌐 [scopeSearchPerson] Request URL:', `${SCOPE_API_URL}/api/v4/SearchPerson`);
+    console.log('🌐 [scopeSearchPerson] Request URL:', `${SCOPE_API_URL}/SearchPerson`);
 
     // Search for person in Scope
-    const searchResponse = await fetch(`${SCOPE_API_URL}/api/v4/SearchPerson`, {
+    const searchResponse = await fetch(`${SCOPE_API_URL}/SearchPerson`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SCOPE_API_KEY}`,

@@ -35,9 +35,9 @@ Deno.serve(async (req) => {
     };
 
     console.log('📤 [scopeGetPersonDetails] Request payload:', JSON.stringify(requestPayload, null, 2));
-    console.log('🌐 [scopeGetPersonDetails] Request URL:', `${SCOPE_API_URL}/api/v4/GetPersonDetails`);
+    console.log('🌐 [scopeGetPersonDetails] Request URL:', `${SCOPE_API_URL}/GetPersonDetails`);
 
-    const detailsResponse = await fetch(`${SCOPE_API_URL}/api/v4/GetPersonDetails`, {
+    const detailsResponse = await fetch(`${SCOPE_API_URL}/GetPersonDetails`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SCOPE_API_KEY}`,

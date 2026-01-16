@@ -537,6 +537,7 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
 
           if (finalApproved) {
             console.log('🎉 Verification successful!');
+            console.log('📱 Desktop session ID:', desktopSessionId);
 
             const resultData = {
               verified: true,

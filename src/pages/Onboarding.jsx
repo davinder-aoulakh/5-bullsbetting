@@ -93,14 +93,22 @@ export default function Onboarding() {
     { label: 'Verification' },
   ];
 
-  // Check for verification session in URL (mobile QR code scan)
+  // Check for SDK verification session in URL (mobile QR code scan)
+  const [sdkSessionId, setSdkSessionId] = useState(null);
+  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('verificationSession');
+    const sessionId = urlParams.get('sdkSession');
+    const linkSessionId = urlParams.get('verificationSession');
     
     if (sessionId) {
-      // Load session data and jump to step 6
+      // SDK session from QR code
+      console.log('📱 SDK session detected in URL:', sessionId);
+      setSdkSessionId(sessionId);
       loadSessionData(sessionId);
+    } else if (linkSessionId) {
+      // Link verification session (existing flow)
+      loadSessionData(linkSessionId);
     }
   }, []);
 
@@ -823,6 +831,7 @@ export default function Onboarding() {
                         onComplete={handleIDVComplete}
                         isMobile={isMobile}
                         userData={{ ...userData, email, phone }}
+                        sessionId={sdkSessionId}
                       />
                     </TabsContent>
                     

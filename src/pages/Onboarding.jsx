@@ -144,8 +144,6 @@ export default function Onboarding() {
         setFullName(sessionUserData.full_name || '');
         setDateOfBirth(sessionUserData.date_of_birth || '');
         setSelectedCountry(sessionUserData.country || '');
-        setEmail(sessionUserData.email || '');
-        setPhone(sessionUserData.phone || '');
         
         // Set document data
         if (sessionUserData.country === 'BR') {

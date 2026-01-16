@@ -533,10 +533,10 @@ export default function Onboarding() {
           <div className="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
             <span className="text-black font-black text-lg">5B</span>
           </div>
-          <span className="font-bold text-lg sm:text-xl">
+          <div className="font-bold text-base sm:text-lg md:text-xl whitespace-nowrap">
             <span className="gold-text">5-Bulls</span>
             <span className="text-white/80">Betting</span>
-          </span>
+          </div>
         </div>
       </header>
 

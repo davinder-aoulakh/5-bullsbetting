@@ -418,80 +418,33 @@ export default function Onboarding() {
 
   const handleIDVComplete = async (result) => {
     if (result.verified) {
-      setLoading(true);
-      try {
-        console.log('🎉 Verification complete, creating user account...');
-        
-        // Create account only after successful verification
-        const createUserResponse = await base44.functions.invoke('createUser', {
-          email,
-          password,
-          userData: {
-            full_name: userData.full_name,
-            cpf: userData.cpf,
-            phone: phone,
-            date_of_birth: userData.date_of_birth,
-            country: userData.country,
-            id_type: userData.id_type,
-            id_value: userData.id_value,
-            kyc_verified: true,
-            verification_date: new Date().toISOString()
-          }
-        });
-
-        if (createUserResponse.data.error) {
-          throw new Error(createUserResponse.data.error);
-        }
-
-        console.log('✅ User account created, logging in...');
-
-        // Login automatically after registration
-        await base44.auth.signIn({ email, password });
-        
-        // Store verification logs
-        const user = await base44.auth.me();
-        
-        // Log ID verification
-        await base44.entities.VerificationLog.create({
-          user_id: user.id,
-          verification_type: 'id_document',
-          provider: 'datachecker',
-          reference_id: result.idTransactionId || result.transactionId,
-          status: 'passed',
-          result_details: result.idResult || result.result
-        });
-
-        // Log face verification if SDK mode
-        if (result.faceTransactionId) {
-          await base44.entities.VerificationLog.create({
-            user_id: user.id,
-            verification_type: 'facial_recognition',
-            provider: 'datachecker',
-            reference_id: result.faceTransactionId,
-            status: 'passed',
-            result_details: result.faceResult
-          });
-        }
-
-        setIdvCompleted(true);
-      } catch (err) {
-        setError(err.message || 'Failed to create account after verification');
-      } finally {
-        setLoading(false);
-      }
+      console.log('🎉 Verification complete! Storing data and redirecting to signup...');
+      
+      // Store all verification data in sessionStorage
+      sessionStorage.setItem('verified_user_data', JSON.stringify({
+        email,
+        password,
+        full_name: userData.full_name,
+        phone,
+        date_of_birth: userData.date_of_birth,
+        country: userData.country,
+        id_type: userData.id_type,
+        id_value: userData.id_value,
+        cpf: userData.cpf,
+        verification_result: result,
+        timestamp: Date.now()
+      }));
+      
+      setIdvCompleted(true);
     }
   };
 
   const handleComplete = async () => {
-    setLoading(true);
-    try {
-      // Account was already created, just redirect to home
-      await new Promise(resolve => setTimeout(resolve, 500));
-      navigate(createPageUrl('Home'));
-    } catch (err) {
-      setError(t('onb_error_complete'));
-    }
-    setLoading(false);
+    console.log('➡️ Redirecting to platform signup...');
+    
+    // Redirect to Base44's signup page with pre-filled email
+    const returnUrl = encodeURIComponent(window.location.origin + createPageUrl('Home'));
+    window.location.href = `/auth/signup?email=${encodeURIComponent(email)}&next=${returnUrl}`;
   };
 
   const nextStep = async () => {

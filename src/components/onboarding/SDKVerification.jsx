@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, XCircle, Camera } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Camera, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 import AutoCapture from '@datachecker/autocapture';
 import FaceVerify from '@datachecker/faceverify';
+import QRCode from 'qrcode';
 
-export default function SDKVerification({ onComplete, userData, isMobile }) {
+export default function SDKVerification({ onComplete, userData, isMobile, sessionId: propSessionId }) {
   const { t, language } = useLanguage();
-  const [step, setStep] = useState('init'); // init, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
+  const [step, setStep] = useState('init'); // init, qr_display, qr_polling, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [mobileUrl, setMobileUrl] = useState('');
+  const [desktopSessionId, setDesktopSessionId] = useState(null);
   
   // Use refs to avoid race conditions
   const customerReferenceRef = useRef(null);
@@ -71,12 +75,17 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
   };
 
   // Start ID document capture
-  const startIDCapture = async () => {
+  const startIDCapture = async (sessionId = null) => {
     try {
       console.log('🚀 Starting ID capture...');
       initializeCustomerReference();
       setStep('id_capture');
       setError('');
+      
+      // Store sessionId if provided (for mobile flow)
+      if (sessionId) {
+        setDesktopSessionId(sessionId);
+      }
 
       // Get SDK token for AutoCapture
       const tokenResponse = await base44.functions.invoke('datacheckerGetSDKToken', {
@@ -522,15 +531,25 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
           if (finalApproved) {
             console.log('🎉 Verification successful!');
-            setStep('success');
-            
+
             const resultData = {
               verified: true,
               idTransactionId: idTxRef.current,
               faceTransactionId: faceTxRef.current,
               customerReference: customerReferenceRef.current
             };
-            
+
+            // If this was a mobile session, update it
+            if (desktopSessionId) {
+              console.log('📱 Updating desktop session with results...');
+              await base44.functions.invoke('updateSDKVerificationSession', {
+                sessionId: desktopSessionId,
+                status: 'completed',
+                result: resultData
+              });
+            }
+
+            setStep('success');
             setTimeout(() => onComplete(resultData), 2000);
           } else {
             throw new Error('Face verification failed');
@@ -576,11 +595,137 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
     };
   }, []);
 
+  // Desktop: Create session and show QR code
+  const startDesktopQRFlow = async () => {
+    try {
+      console.log('💻 Starting desktop QR flow...');
+      setStep('qr_display');
+      
+      const response = await base44.functions.invoke('createSDKVerificationSession', {
+        userData
+      });
+      
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+      
+      const { sessionId, mobileUrl } = response.data;
+      setDesktopSessionId(sessionId);
+      setMobileUrl(mobileUrl);
+      
+      // Generate QR code
+      const qrDataUrl = await QRCode.toDataURL(mobileUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      setQrCodeUrl(qrDataUrl);
+      console.log('✅ QR code generated, sessionId:', sessionId);
+      
+      // Start polling for session completion
+      pollDesktopSession(sessionId);
+      
+    } catch (err) {
+      console.error('❌ Failed to create QR session:', err.message);
+      setError(err.message || 'Failed to generate QR code');
+      setStep('failed');
+    }
+  };
+
+  // Poll for desktop session completion
+  const pollDesktopSession = async (sessionId) => {
+    console.log('🔄 Polling desktop session...');
+    
+    let delay = 3000;
+    const maxDelay = 10000;
+    const maxDuration = 10 * 60 * 1000; // 10 minutes
+    const startTime = Date.now();
+
+    const poll = async () => {
+      try {
+        const elapsed = Date.now() - startTime;
+        
+        if (elapsed > maxDuration) {
+          throw new Error('Session timeout - please try again');
+        }
+
+        const pollResponse = await base44.functions.invoke('pollSDKVerificationSession', {
+          sessionId
+        });
+
+        if (pollResponse.data.error) {
+          throw new Error(pollResponse.data.error);
+        }
+
+        if (pollResponse.data.completed) {
+          console.log('✅ Desktop session completed!');
+          setStep('success');
+          setTimeout(() => onComplete(pollResponse.data.result), 2000);
+        } else {
+          delay = Math.min(delay * 1.2, maxDelay);
+          pollTimeoutRef.current = setTimeout(poll, delay);
+        }
+
+      } catch (err) {
+        console.error('❌ Desktop session polling error:', err.message);
+        setError(err.message || 'Failed to verify');
+        setStep('failed');
+      }
+    };
+
+    poll();
+  };
+
+  // Mobile: Load session and start SDK
+  const loadMobileSession = async (sessionId) => {
+    try {
+      console.log('📱 Loading mobile session:', sessionId);
+      setStep('id_capture');
+      
+      const response = await base44.functions.invoke('pollSDKVerificationSession', {
+        sessionId
+      });
+      
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+      
+      // Update session to in_progress
+      await base44.functions.invoke('updateSDKVerificationSession', {
+        sessionId,
+        status: 'in_progress'
+      });
+      
+      // Start SDK capture flow
+      setTimeout(() => startIDCapture(sessionId), 500);
+      
+    } catch (err) {
+      console.error('❌ Failed to load mobile session:', err.message);
+      setError(err.message || 'Failed to load session');
+      setStep('failed');
+    }
+  };
+
   // Auto-start verification when component mounts
   useEffect(() => {
     if (step === 'init') {
       console.log('🚀 Starting verification flow...');
-      startIDCapture();
+      
+      // Check if we have a session ID (mobile user scanned QR)
+      if (propSessionId) {
+        console.log('📱 Mobile session detected:', propSessionId);
+        loadMobileSession(propSessionId);
+      } else if (!isMobile) {
+        console.log('💻 Desktop detected - showing QR code');
+        startDesktopQRFlow();
+      } else {
+        console.log('📱 Mobile direct - starting SDK');
+        startIDCapture();
+      }
     }
   }, [step]);
 
@@ -592,6 +737,44 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
           {language === 'pt' ? 'Preparando verificação...' : 'Preparing verification...'}
         </p>
       </div>
+    );
+  }
+
+  if (step === 'qr_display') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center py-8"
+      >
+        <div className="max-w-md mx-auto">
+          <Smartphone className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-white mb-2">
+            {language === 'pt' ? 'Escaneie com seu Celular' : 'Scan with Your Phone'}
+          </h3>
+          <p className="text-white/60 mb-6">
+            {language === 'pt'
+              ? 'Use a câmera do seu celular para escanear o código QR e continuar a verificação.'
+              : 'Use your phone camera to scan the QR code and continue verification.'}
+          </p>
+          
+          {qrCodeUrl ? (
+            <div className="bg-white p-6 rounded-2xl inline-block mb-4">
+              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+            </div>
+          ) : (
+            <div className="bg-white/10 p-6 rounded-2xl inline-block mb-4">
+              <Loader2 className="w-64 h-64 text-amber-400 animate-spin" />
+            </div>
+          )}
+          
+          <p className="text-white/40 text-sm">
+            {language === 'pt'
+              ? 'Aguardando verificação no celular...'
+              : 'Waiting for verification on phone...'}
+          </p>
+        </div>
+      </motion.div>
     );
   }
 

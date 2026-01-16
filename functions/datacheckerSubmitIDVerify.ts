@@ -9,6 +9,13 @@ Deno.serve(async (req) => {
     const { transactionId, images } = body;
 
     console.log('📤 Submitting ID verification, transactionId:', transactionId, 'images count:', images?.length);
+    console.log('📸 Image details:', images.map((img, i) => ({ 
+      index: i, 
+      type: img.type, 
+      pageType: img.pageType,
+      hasData: !!img.data, 
+      dataLength: img.data?.length 
+    })));
 
     if (!transactionId || !images || images.length === 0) {
       return Response.json({ 
@@ -61,17 +68,25 @@ Deno.serve(async (req) => {
     const accessToken = tokenData.accessToken;
 
     // Submit ID verification
+    const payload = {
+      transactionId,
+      product: IDV_PRODUCT,
+      images
+    };
+    
+    console.log('📦 Payload being sent:', JSON.stringify({
+      transactionId: payload.transactionId,
+      product: payload.product,
+      images: payload.images.map(img => ({ type: img.type, dataLength: img.data?.length }))
+    }));
+    
     const idVerifyResponse = await fetch(`${DATACHECKER_BASE_URL}/api/v2/idverify`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        transactionId,
-        product: IDV_PRODUCT,
-        images
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!idVerifyResponse.ok) {

@@ -455,7 +455,7 @@ export default function Onboarding() {
   };
 
   useEffect(() => {
-    if (currentStep === 5 && termsAccepted && privacyAccepted && !kycPassed) {
+    if (currentStep === 3 && termsAccepted && privacyAccepted && !kycPassed) {
       handleKYCCheck();
     }
   }, [termsAccepted, privacyAccepted, currentStep]);

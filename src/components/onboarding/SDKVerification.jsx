@@ -404,6 +404,14 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       }
 
       console.log('📤 Submitting face verification with COMPARE + LIVE images...');
+      console.log('📊 Payload summary:', {
+        transactionId: faceTxRef.current,
+        imagesCount: images.length,
+        imageTypes: images.map(img => img.type),
+        imageSizes: images.map(img => Math.round((img.data?.length || 0) / 1024) + 'KB'),
+        hasValidChallenges: data.valid_challenges !== undefined,
+        validChallenges: data.valid_challenges
+      });
 
       // Submit face verification
       const submitPayload = {
@@ -417,8 +425,15 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
 
       const submitResponse = await base44.functions.invoke('datacheckerSubmitFaceVerify', submitPayload);
 
+      console.log('📥 Submit response:', submitResponse.data);
+
       if (submitResponse.data.error) {
-        throw new Error(submitResponse.data.error);
+        console.error('❌ Submit error details:', {
+          error: submitResponse.data.error,
+          details: submitResponse.data.details,
+          status: submitResponse.data.status
+        });
+        throw new Error(submitResponse.data.error + (submitResponse.data.details ? ': ' + JSON.stringify(submitResponse.data.details) : ''));
       }
 
       console.log('✅ Face images submitted successfully');

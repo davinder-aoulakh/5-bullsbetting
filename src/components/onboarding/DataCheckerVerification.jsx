@@ -5,7 +5,7 @@ import { Loader2, CheckCircle2, XCircle, Smartphone, AlertCircle } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 
-export default function DataCheckerVerification({ onComplete, userData, isMobile }) {
+export default function DataCheckerVerification({ onComplete, userData, isMobile, onVerificationLoadingChange }) {
   const { t } = useLanguage();
   const [status, setStatus] = useState('initializing'); // initializing, ready, polling, completed, error, success, failed
   const [verificationData, setVerificationData] = useState(null);
@@ -24,6 +24,14 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       }
     };
   }, [pollingInterval]);
+
+  // Notify parent about verification status
+  useEffect(() => {
+    const isProcessing = ['initializing', 'polling'].includes(status);
+    if (onVerificationLoadingChange) {
+      onVerificationLoadingChange(isProcessing);
+    }
+  }, [status, onVerificationLoadingChange]);
 
   const initializeVerification = async () => {
     try {

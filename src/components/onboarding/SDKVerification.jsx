@@ -8,7 +8,7 @@ import AutoCapture from '@datachecker/autocapture';
 import FaceVerify from '@datachecker/faceverify';
 import QRCode from 'qrcode';
 
-export default function SDKVerification({ onComplete, userData, isMobile, sessionId: propSessionId }) {
+export default function SDKVerification({ onComplete, userData, isMobile, sessionId: propSessionId, onVerificationLoadingChange }) {
   const { t, language } = useLanguage();
   const [step, setStep] = useState('init'); // init, qr_display, qr_polling, id_capture, id_processing, id_polling, face_capture, face_processing, face_polling, success, failed
   const [error, setError] = useState('');
@@ -778,6 +778,14 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
       }
     }
   }, [step]);
+
+  // Notify parent about verification status
+  useEffect(() => {
+    const isProcessing = ['id_capture', 'id_processing', 'id_polling', 'face_capture', 'face_processing', 'face_polling'].includes(step);
+    if (onVerificationLoadingChange) {
+      onVerificationLoadingChange(isProcessing);
+    }
+  }, [step, onVerificationLoadingChange]);
 
   if (step === 'init') {
     return (

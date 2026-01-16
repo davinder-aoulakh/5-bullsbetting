@@ -84,6 +84,7 @@ export default function Onboarding() {
   const [idvCompleted, setIdvCompleted] = useState(false);
   const [scopeCompleted, setScopeCompleted] = useState(false);
   const [verificationTab, setVerificationTab] = useState('sdk'); // 'sdk' or 'link'
+  const [isVerificationActive, setIsVerificationActive] = useState(false);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -529,10 +530,10 @@ export default function Onboarding() {
       {/* Header */}
       <header className="p-4 flex items-center justify-center">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
             <span className="text-black font-black text-lg">5B</span>
           </div>
-          <span className="font-bold text-xl">
+          <span className="font-bold text-lg sm:text-xl">
             <span className="gold-text">5-Bulls</span>
             <span className="text-white/80">Betting</span>
           </span>
@@ -753,6 +754,7 @@ export default function Onboarding() {
                         isMobile={isMobile}
                         userData={userData}
                         sessionId={sdkSessionId}
+                        onVerificationLoadingChange={setIsVerificationActive}
                       />
                     </TabsContent>
 
@@ -761,6 +763,7 @@ export default function Onboarding() {
                         onComplete={handleIDVComplete}
                         isMobile={isMobile}
                         userData={userData}
+                        onVerificationLoadingChange={setIsVerificationActive}
                       />
                     </TabsContent>
                   </Tabs>
@@ -799,7 +802,7 @@ export default function Onboarding() {
               {currentStep < 5 && (
                 <Button
                   onClick={nextStep}
-                  disabled={!canProceed() || loading}
+                  disabled={!canProceed() || loading || isVerificationActive}
                   className="gold-gradient text-black font-semibold hover:opacity-90 disabled:opacity-50"
                 >
                   {loading ? (

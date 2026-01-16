@@ -329,14 +329,18 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       const { token, transactionId } = tokenResponse.data;
       faceTxRef.current = transactionId;
       console.log('✅ Got FaceVerify SDK token, transactionId:', transactionId);
+      console.log('🔑 Token length:', token?.length, 'Token preview:', token?.substring(0, 20) + '...');
 
       // Initialize FaceVerify
+      console.log('📦 Creating FaceVerify instance...');
       const FV = new FaceVerify();
       fvInstanceRef.current = FV;
+      console.log('✅ FaceVerify instance created:', FV);
+      console.log('🔍 FV methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(FV)));
 
       const isDevMode = window.location.hostname === 'localhost' || window.location.hostname.includes('staging');
-
-      await FV.init({
+      
+      const fvConfig = {
         CONTAINER_ID: 'fv-mount',
         LANGUAGE: getSDKTranslations(),
         TOKEN: token,
@@ -345,7 +349,19 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
         onUserExit: handleFaceCaptureExit,
         DEBUG: false,
         DESKTOP_MODE: isDevMode && !isMobile
+      };
+      
+      console.log('⚙️ FaceVerify config:', {
+        ...fvConfig,
+        TOKEN: token?.substring(0, 20) + '...',
+        LANGUAGE: typeof fvConfig.LANGUAGE === 'string' ? fvConfig.LANGUAGE : 'custom'
       });
+
+      console.log('🚀 Initializing FaceVerify SDK...');
+      await FV.init(fvConfig);
+      console.log('✅ FaceVerify initialized successfully');
+      console.log('🔍 FV after init:', FV);
+      console.log('🔍 FV methods after init:', Object.getOwnPropertyNames(Object.getPrototypeOf(FV)));
 
     } catch (err) {
       console.error('❌ Failed to start face capture:', err.message);

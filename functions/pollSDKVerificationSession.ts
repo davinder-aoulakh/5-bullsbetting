@@ -13,18 +13,22 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
     
+    console.log('🔄 Polling for session:', sessionId);
+    
     // Get session from database
     const sessions = await base44.asServiceRole.entities.VerificationSession.filter({
       session_id: sessionId
     });
 
     if (!sessions || sessions.length === 0) {
+      console.warn('❌ Session not found:', sessionId);
       return Response.json({ 
         error: 'Session not found' 
       }, { status: 404 });
     }
 
     const session = sessions[0];
+    console.log('✅ Found session:', sessionId, 'Status:', session.status);
 
     // Check if expired
     if (new Date(session.expires_at) < new Date()) {

@@ -644,6 +644,7 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
     const maxDelay = 10000;
     const maxDuration = 10 * 60 * 1000; // 10 minutes
     const startTime = Date.now();
+    let notFoundCount = 0;
 
     const poll = async () => {
       try {
@@ -658,8 +659,27 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
         });
 
         if (pollResponse.data.error) {
+          // Handle "Session not found" gracefully during initial polling
+          if (pollResponse.data.error === 'Session not found') {
+            notFoundCount++;
+            console.warn(`⏳ Session not found yet (attempt ${notFoundCount}), continuing to poll...`);
+            
+            // If not found after many attempts, something is wrong
+            if (notFoundCount > 10) {
+              throw new Error('Session creation failed - please try again');
+            }
+            
+            delay = Math.min(delay * 1.2, maxDelay);
+            pollTimeoutRef.current = setTimeout(poll, delay);
+            return;
+          }
           throw new Error(pollResponse.data.error);
         }
+
+        // Reset not found counter once we get a valid response
+        notFoundCount = 0;
+
+        console.log('📥 Desktop session status:', pollResponse.data.status);
 
         if (pollResponse.data.completed) {
           console.log('✅ Desktop session completed!');
@@ -845,7 +865,12 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
         <div 
           id="ac-mount"
           className="rounded-xl overflow-hidden"
-          style={{ maxWidth: '500px', margin: '0 auto' }}
+          style={{ 
+            maxWidth: '500px', 
+            margin: '0 auto',
+            paddingTop: '2rem',
+            paddingBottom: '2rem'
+          }}
         />
       </div>
     );
@@ -882,7 +907,12 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
         <div 
           id="fv-mount"
           className="rounded-xl overflow-hidden"
-          style={{ maxWidth: '500px', margin: '0 auto' }}
+          style={{ 
+            maxWidth: '500px', 
+            margin: '0 auto',
+            paddingTop: '2rem',
+            paddingBottom: '2rem'
+          }}
         />
       </div>
     );

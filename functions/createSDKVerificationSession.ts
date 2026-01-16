@@ -18,7 +18,8 @@ Deno.serve(async (req) => {
     const sessionId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
-    await base44.asServiceRole.entities.VerificationSession.create({
+    console.log('📝 Creating SDK verification session:', sessionId);
+    const newSession = await base44.asServiceRole.entities.VerificationSession.create({
       session_id: sessionId,
       user_data: userData,
       status: 'pending',
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString()
     });
 
-    console.log('✅ Created SDK verification session:', sessionId);
+    console.log('✅ Created SDK verification session:', sessionId, 'DB ID:', newSession.id);
 
     return Response.json({
       sessionId,

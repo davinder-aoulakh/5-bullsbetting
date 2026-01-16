@@ -31,6 +31,7 @@ import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
 import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
 import SDKVerification from '@/components/onboarding/SDKVerification';
+import ScopeVerification from '@/components/onboarding/ScopeVerification';
 import { useLanguage } from '@/components/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -81,6 +82,7 @@ export default function Onboarding() {
   
   const [kycPassed, setKycPassed] = useState(false);
   const [idvCompleted, setIdvCompleted] = useState(false);
+  const [scopeCompleted, setScopeCompleted] = useState(false);
   const [verificationTab, setVerificationTab] = useState('sdk'); // 'sdk' or 'link'
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -89,7 +91,8 @@ export default function Onboarding() {
     { label: 'Country' },
     { label: 'Identity' },
     { label: 'Terms' },
-    { label: 'Verification' },
+    { label: 'ID Verify' },
+    { label: 'Compliance' },
   ];
 
   // Check for SDK verification session in URL (mobile QR code scan)
@@ -171,7 +174,7 @@ export default function Onboarding() {
         setTermsAccepted(true);
         setPrivacyAccepted(true);
         
-        // Jump to verification step
+        // Jump to ID verification step
         setCurrentStep(4);
       } else {
         throw new Error(response.data?.error || 'Session not found');
@@ -416,8 +419,10 @@ export default function Onboarding() {
         return docValid && fullName.trim() && dateOfBirth;
       case 3: // Terms
         return termsAccepted && privacyAccepted && kycPassed;
-      case 4: // Verification
+      case 4: // ID Verification
         return idvCompleted;
+      case 5: // Scope Compliance
+        return scopeCompleted;
       default:
         return false;
     }
@@ -433,8 +438,21 @@ export default function Onboarding() {
 
   const handleIDVComplete = async (result) => {
     if (result.verified) {
-      console.log('🎉 Verification complete! Redirecting to signup...');
+      console.log('🎉 ID Verification complete! Moving to compliance check...');
       setIdvCompleted(true);
+      // Move to next step (Scope verification)
+      setTimeout(() => {
+        setCurrentStep(5);
+      }, 1000);
+    }
+  };
+
+  const handleScopeComplete = async (result) => {
+    console.log('🎯 Scope verification complete:', result);
+    setScopeCompleted(true);
+    
+    if (result.verified && result.status === 'approved') {
+      console.log('✅ All verifications passed! Redirecting to signup...');
       
       // Store verification data in sessionStorage
       sessionStorage.setItem('verified_user_data', JSON.stringify({
@@ -444,7 +462,8 @@ export default function Onboarding() {
         id_type: userData.id_type,
         id_value: userData.id_value,
         cpf: userData.cpf,
-        verification_result: result,
+        scope_status: result.status,
+        scope_risk_score: result.risk_score,
         timestamp: Date.now()
       }));
       
@@ -707,7 +726,7 @@ export default function Onboarding() {
               {/* Step 4: ID Verification */}
               {currentStep === 4 && (
                 <motion.div
-                  key="step6"
+                  key="step4"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -730,7 +749,7 @@ export default function Onboarding() {
                         Link Verification
                       </TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="sdk" className="mt-0">
                       <SDKVerification
                         onComplete={handleIDVComplete}
@@ -739,7 +758,7 @@ export default function Onboarding() {
                         sessionId={sdkSessionId}
                       />
                     </TabsContent>
-                    
+
                     <TabsContent value="link" className="mt-0">
                       <DataCheckerVerification
                         onComplete={handleIDVComplete}
@@ -748,6 +767,22 @@ export default function Onboarding() {
                       />
                     </TabsContent>
                   </Tabs>
+                </motion.div>
+              )}
+
+              {/* Step 5: Scope Compliance Verification */}
+              {currentStep === 5 && (
+                <motion.div
+                  key="step5"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <ScopeVerification
+                    userData={userData}
+                    sessionId={sdkSessionId || 'onboarding'}
+                    onComplete={handleScopeComplete}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -764,7 +799,7 @@ export default function Onboarding() {
                 {t('onb_back')}
               </Button>
 
-              {currentStep < 4 && (
+              {currentStep < 5 && (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed() || loading}

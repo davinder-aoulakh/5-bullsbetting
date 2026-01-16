@@ -63,12 +63,12 @@ Deno.serve(async (req) => {
 
     // Search for person in Scope
     const requestHeaders = {
-      'Authorization': `Bearer ${SCOPE_API_KEY}`,
+      'API-Key': SCOPE_API_KEY,
       'Content-Type': 'application/json'
     };
     
     console.log('📤 [scopeSearchPerson] Request headers:', {
-      'Authorization': `Bearer ${SCOPE_API_KEY.substring(0, 8)}...`,
+      'API-Key': `${SCOPE_API_KEY.substring(0, 8)}...`,
       'Content-Type': requestHeaders['Content-Type']
     });
     

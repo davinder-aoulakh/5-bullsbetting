@@ -40,12 +40,12 @@ Deno.serve(async (req) => {
     console.log('🌐 [scopeGetPersonDetails] Request URL:', `${SCOPE_API_URL}/GetPersonDetails`);
 
     const requestHeaders = {
-      'Authorization': `Bearer ${SCOPE_API_KEY}`,
+      'API-Key': SCOPE_API_KEY,
       'Content-Type': 'application/json'
     };
     
     console.log('📤 [scopeGetPersonDetails] Request headers:', {
-      'Authorization': `Bearer ${SCOPE_API_KEY.substring(0, 8)}...`,
+      'API-Key': `${SCOPE_API_KEY.substring(0, 8)}...`,
       'Content-Type': requestHeaders['Content-Type']
     });
     

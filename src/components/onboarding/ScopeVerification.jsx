@@ -28,20 +28,35 @@ export default function ScopeVerification({ userData, sessionId, onComplete }) {
       setStatus('screening');
       setError(null);
 
-      console.log('🚀 Starting Scope CDD verification...');
+      console.log('🚀 [ScopeVerification] Starting Scope CDD verification...');
+      console.log('👤 [ScopeVerification] User data:', JSON.stringify(userData, null, 2));
+      console.log('🆔 [ScopeVerification] Session ID:', sessionId);
 
-      const response = await base44.functions.invoke('scopeCompleteVerification', {
+      const requestPayload = {
         userData,
         sessionId
-      });
+      };
+      console.log('📤 [ScopeVerification] Request payload:', JSON.stringify(requestPayload, null, 2));
 
-      console.log('📊 Scope verification result:', response.data);
+      const response = await base44.functions.invoke('scopeCompleteVerification', requestPayload);
+
+      console.log('📊 [ScopeVerification] Response status:', response.status);
+      console.log('📊 [ScopeVerification] Response data:', JSON.stringify(response.data, null, 2));
 
       if (response.data.error) {
+        console.error('❌ [ScopeVerification] API returned error:', response.data.error);
+        console.error('📋 [ScopeVerification] Error stack:', response.data.stack);
         throw new Error(response.data.error);
       }
 
       const { status: verificationStatus, approved, reason, risk_score, details } = response.data;
+
+      console.log('✅ [ScopeVerification] Verification complete:', {
+        status: verificationStatus,
+        approved,
+        reason,
+        risk_score
+      });
 
       setResult({
         status: verificationStatus,
@@ -55,6 +70,7 @@ export default function ScopeVerification({ userData, sessionId, onComplete }) {
 
       // Call onComplete with result
       if (onComplete) {
+        console.log('📞 [ScopeVerification] Calling onComplete callback');
         onComplete({
           verified: approved,
           status: verificationStatus,
@@ -64,11 +80,16 @@ export default function ScopeVerification({ userData, sessionId, onComplete }) {
       }
 
     } catch (err) {
-      console.error('❌ Scope verification error:', err);
+      console.error('❌ [ScopeVerification] Verification error:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
       setError(err.message);
       setStatus('error');
     } finally {
       setLoading(false);
+      console.log('🏁 [ScopeVerification] Verification process finished');
     }
   };
 

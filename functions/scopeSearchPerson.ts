@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
     console.log('🔑 [scopeSearchPerson] API Config:', {
       hasKey: !!SCOPE_API_KEY,
       keyLength: SCOPE_API_KEY?.length,
-      url: SCOPE_API_URL
+      keyPrefix: SCOPE_API_KEY ? `${SCOPE_API_KEY.substring(0, 4)}...${SCOPE_API_KEY.substring(SCOPE_API_KEY.length - 4)}` : 'N/A',
+      url: SCOPE_API_URL,
+      fullUrl: `${SCOPE_API_URL}/SearchPerson`
     });
 
     if (!SCOPE_API_KEY || !SCOPE_API_URL) {
@@ -60,13 +62,20 @@ Deno.serve(async (req) => {
     console.log('🌐 [scopeSearchPerson] Request URL:', `${SCOPE_API_URL}/SearchPerson`);
 
     // Search for person in Scope
+    const requestHeaders = {
+      'Authorization': `Bearer ${SCOPE_API_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    
+    console.log('📤 [scopeSearchPerson] Request headers:', {
+      'Authorization': `Bearer ${SCOPE_API_KEY.substring(0, 8)}...`,
+      'Content-Type': requestHeaders['Content-Type']
+    });
+    
     const requestStart = Date.now();
     const searchResponse = await fetch(`${SCOPE_API_URL}/SearchPerson`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SCOPE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: requestHeaders,
       body: JSON.stringify(searchPayload)
     });
     const requestDuration = Date.now() - requestStart;
@@ -95,12 +104,23 @@ Deno.serve(async (req) => {
         console.error('❌ [scopeSearchPerson] Error response is not JSON:', errorText);
       }
       
+      // Add helpful error messages based on status code
+      let troubleshooting = '';
+      if (searchResponse.status === 403) {
+        troubleshooting = 'API key might be invalid, expired, or lacks necessary permissions. Check: 1) API key is correct in SCOPE_API_KEY secret, 2) Key has access to SearchPerson endpoint, 3) Test environment credentials are being used for test-cmp.scope.nl';
+      } else if (searchResponse.status === 401) {
+        troubleshooting = 'Authentication failed. Verify SCOPE_API_KEY secret is set correctly and not expired.';
+      } else if (searchResponse.status === 404) {
+        troubleshooting = 'Endpoint not found. Verify SCOPE_API_URL is correct (should be https://test-cmp.scope.nl/api/v4 or https://cmp.scope.nl/api/v4).';
+      }
+      
       return Response.json({ 
         error: 'Failed to search in Scope CDD',
         details: errorText,
         parsedError: parsedError || null,
         status: searchResponse.status,
-        url: `${SCOPE_API_URL}/SearchPerson`
+        url: `${SCOPE_API_URL}/SearchPerson`,
+        troubleshooting
       }, { status: searchResponse.status });
     }
 

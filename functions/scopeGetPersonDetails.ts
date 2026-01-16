@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
     console.log('🔑 [scopeGetPersonDetails] API Config:', {
       hasKey: !!SCOPE_API_KEY,
       keyLength: SCOPE_API_KEY?.length,
-      url: SCOPE_API_URL
+      keyPrefix: SCOPE_API_KEY ? `${SCOPE_API_KEY.substring(0, 4)}...${SCOPE_API_KEY.substring(SCOPE_API_KEY.length - 4)}` : 'N/A',
+      url: SCOPE_API_URL,
+      fullUrl: `${SCOPE_API_URL}/GetPersonDetails`
     });
 
     if (!SCOPE_API_KEY || !SCOPE_API_URL) {
@@ -37,13 +39,20 @@ Deno.serve(async (req) => {
     console.log('📤 [scopeGetPersonDetails] Request payload:', JSON.stringify(requestPayload, null, 2));
     console.log('🌐 [scopeGetPersonDetails] Request URL:', `${SCOPE_API_URL}/GetPersonDetails`);
 
+    const requestHeaders = {
+      'Authorization': `Bearer ${SCOPE_API_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    
+    console.log('📤 [scopeGetPersonDetails] Request headers:', {
+      'Authorization': `Bearer ${SCOPE_API_KEY.substring(0, 8)}...`,
+      'Content-Type': requestHeaders['Content-Type']
+    });
+    
     const requestStart = Date.now();
     const detailsResponse = await fetch(`${SCOPE_API_URL}/GetPersonDetails`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SCOPE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: requestHeaders,
       body: JSON.stringify(requestPayload)
     });
     const requestDuration = Date.now() - requestStart;
@@ -72,12 +81,23 @@ Deno.serve(async (req) => {
         console.error('❌ [scopeGetPersonDetails] Error response is not JSON:', errorText);
       }
       
+      // Add helpful error messages based on status code
+      let troubleshooting = '';
+      if (detailsResponse.status === 403) {
+        troubleshooting = 'API key might be invalid, expired, or lacks necessary permissions. Check SCOPE_API_KEY secret configuration.';
+      } else if (detailsResponse.status === 401) {
+        troubleshooting = 'Authentication failed. Verify SCOPE_API_KEY secret is set correctly.';
+      } else if (detailsResponse.status === 404) {
+        troubleshooting = 'Compliance ID not found or endpoint incorrect. Verify the complianceId and SCOPE_API_URL.';
+      }
+      
       return Response.json({ 
         error: 'Failed to get person details from Scope',
         details: errorText,
         parsedError: parsedError || null,
         status: detailsResponse.status,
-        url: `${SCOPE_API_URL}/GetPersonDetails`
+        url: `${SCOPE_API_URL}/GetPersonDetails`,
+        troubleshooting
       }, { status: detailsResponse.status });
     }
 

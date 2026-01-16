@@ -129,27 +129,27 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
       console.log('Images count:', data.images?.length);
       setStep('id_processing');
 
-      // Extract images with proper type handling
+      // Extract images with proper document type for DataChecker API
+      // DataChecker expects: IDENTITY_CARD, PASSPORT, DRIVING_LICENSE (not FRONT/BACK)
       const images = data.images.map((base64String, index) => {
         const base64Data = base64String.includes(',') 
           ? base64String.split(',')[1] 
           : base64String;
 
-        // Map to proper page types (FRONT/BACK) for DataChecker
-        let imageType = null;
+        // Determine document type from SDK metadata
+        let imageType = 'IDENTITY_CARD'; // default
         const meta = data.meta?.[index];
 
-        // Priority 1: Use meta.page_type if it's FRONT or BACK
-        if (meta && (meta.page_type === 'FRONT' || meta.page_type === 'BACK')) {
-          imageType = meta.page_type;
-        }
-        // Priority 2: For PASSPORT with single image, use FRONT
-        else if (meta && meta.document_type === 'PASSPORT' && data.images.length === 1) {
-          imageType = 'FRONT';
-        }
-        // Priority 3: Fallback based on index for multi-image docs
-        else {
-          imageType = (index === 0 ? 'FRONT' : 'BACK');
+        if (meta && meta.document_type) {
+          // Map SDK document types to DataChecker API types
+          const docType = meta.document_type.toUpperCase();
+          if (docType === 'PASSPORT') {
+            imageType = 'PASSPORT';
+          } else if (docType === 'DRIVING_LICENSE' || docType === 'DRIVINGLICENSE') {
+            imageType = 'DRIVING_LICENSE';
+          } else if (docType === 'IDENTITY_CARD' || docType === 'IDENTITYCARD') {
+            imageType = 'IDENTITY_CARD';
+          }
         }
 
         return {

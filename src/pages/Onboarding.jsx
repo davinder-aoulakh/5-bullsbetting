@@ -25,6 +25,7 @@ import CPFInput from '@/components/onboarding/CPFInput';
 import PassportInput from '@/components/onboarding/PassportInput';
 import DriverLicenseInput from '@/components/onboarding/DriverLicenseInput';
 import SedulaInput from '@/components/onboarding/SedulaInput';
+import NationalIDInput from '@/components/onboarding/NationalIDInput';
 import DocumentTypeSelector from '@/components/onboarding/DocumentTypeSelector';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
@@ -64,6 +65,11 @@ export default function Onboarding() {
   const [sedulaError, setSedulaError] = useState('');
   const [sedulaValidating, setSedulaValidating] = useState(false);
   const [sedulaValid, setSedulaValid] = useState(false);
+  
+  const [nationalId, setNationalId] = useState('');
+  const [nationalIdError, setNationalIdError] = useState('');
+  const [nationalIdValidating, setNationalIdValidating] = useState(false);
+  const [nationalIdValid, setNationalIdValid] = useState(false);
   
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -151,6 +157,9 @@ export default function Onboarding() {
           } else if (sessionUserData.id_type === 'sedula') {
             setSedula(sessionUserData.id_value || '');
             setSedulaValid(true);
+          } else if (sessionUserData.id_type === 'identity_card') {
+            setNationalId(sessionUserData.id_value || '');
+            setNationalIdValid(true);
           }
         }
         
@@ -343,6 +352,35 @@ export default function Onboarding() {
     }
   };
 
+  // National ID validation
+  const validateNationalId = (value, country) => {
+    switch (country) {
+      case 'NL': // Dutch National ID: 9 characters (letters and numbers)
+        return /^[A-Z0-9]{9}$/.test(value);
+      default:
+        return value.length >= 6 && /^[A-Z0-9]+$/.test(value);
+    }
+  };
+
+  const handleNationalIdChange = (value) => {
+    setNationalId(value);
+    setNationalIdError('');
+    setNationalIdValid(false);
+    
+    if (value.length >= 6) {
+      setNationalIdValidating(true);
+      
+      setTimeout(() => {
+        if (validateNationalId(value, selectedCountry)) {
+          setNationalIdValid(true);
+        } else {
+          setNationalIdError('Invalid National ID format');
+        }
+        setNationalIdValidating(false);
+      }, 500);
+    }
+  };
+
   const canProceed = () => {
     switch (currentStep) {
       case 1: // Country selection
@@ -366,6 +404,8 @@ export default function Onboarding() {
           docValid = licenseValid && !licenseValidating;
         } else if (documentType === 'sedula') {
           docValid = sedulaValid && !sedulaValidating;
+        } else if (documentType === 'identity_card') {
+          docValid = nationalIdValid && !nationalIdValidating;
         }
         
         return docValid && fullName.trim() && dateOfBirth;
@@ -429,6 +469,9 @@ export default function Onboarding() {
       } else if (documentType === 'sedula') {
         idValue = sedula;
         idType = 'sedula';
+      } else if (documentType === 'identity_card') {
+        idValue = nationalId;
+        idType = 'identity_card';
       }
       
       setUserData({
@@ -571,6 +614,18 @@ export default function Onboarding() {
                       error={sedulaError}
                       isValidating={sedulaValidating}
                       isValid={sedulaValid}
+                    />
+                  )}
+
+                  {/* National ID */}
+                  {documentType === 'identity_card' && (
+                    <NationalIDInput
+                      value={nationalId}
+                      onChange={handleNationalIdChange}
+                      error={nationalIdError}
+                      isValidating={nationalIdValidating}
+                      isValid={nationalIdValid}
+                      country={selectedCountry}
                     />
                   )}
 

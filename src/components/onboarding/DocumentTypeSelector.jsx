@@ -6,10 +6,15 @@ export default function DocumentTypeSelector({ country, selectedType, onSelect }
   const getDocumentTypes = () => {
     switch (country) {
       case 'AU':
-      case 'NL':
         return [
           { value: 'driver_license', label: "Driver's License", icon: CreditCard },
           { value: 'passport', label: 'Passport', icon: FileText }
+        ];
+      case 'NL':
+        return [
+          { value: 'driver_license', label: "Driver's License", icon: CreditCard },
+          { value: 'passport', label: 'Passport', icon: FileText },
+          { value: 'identity_card', label: 'National ID', icon: CreditCard }
         ];
       case 'CW':
         return [

@@ -28,17 +28,38 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Scope API not configured' }, { status: 500 });
     }
 
+    // Parse name into first and last
+    const nameParts = (userData.full_name || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     const searchPayload = {
-      first_name: userData.full_name?.split(' ')[0] || '',
-      last_name: userData.full_name?.split(' ').slice(1).join(' ') || '',
-      date_of_birth: userData.date_of_birth,
-      country: userData.country
+      firstName,
+      lastName,
+      dateOfBirth: userData.date_of_birth,
+      gender: "Unknown", // We don't collect gender
+      countries: [userData.country],
+      sets: {
+        sanctionsCurrent: true,
+        sanctionsFormer: true,
+        regulatoryEnforcement: true,
+        reputationalRisk: true,
+        internationalInsolvency: true,
+        profileOfInterest: true,
+        pepCurrent: true,
+        pepFormer: true,
+        pepLinked: true,
+        disqualifiedDirector: true,
+        dutchLegalConstraints: userData.country === 'NL' ? "Required" : "No",
+        dutchInsolvency: userData.country === 'NL' ? "Required" : "No",
+        offshoreLeaks: "No"
+      }
     };
 
     console.log('📤 [scopeSearchPerson] Search payload:', JSON.stringify(searchPayload, null, 2));
     console.log('🌐 [scopeSearchPerson] Request URL:', `${SCOPE_API_URL}/api/v4/SearchPerson`);
 
-    // Search for existing person in Scope
+    // Search for person in Scope
     const searchResponse = await fetch(`${SCOPE_API_URL}/api/v4/SearchPerson`, {
       method: 'POST',
       headers: {
@@ -68,17 +89,16 @@ Deno.serve(async (req) => {
     const searchData = await searchResponse.json();
     console.log('✅ [scopeSearchPerson] Success response:', JSON.stringify(searchData, null, 2));
 
-    // Check if person exists
-    const existingPerson = searchData.data && searchData.data.length > 0 ? searchData.data[0] : null;
-
     console.log('🎯 [scopeSearchPerson] Result:', {
-      found: !!existingPerson,
-      personId: existingPerson?.id
+      matchCount: searchData.matchCount,
+      hasMatches: searchData.matchCount > 0
     });
 
     return Response.json({
-      found: !!existingPerson,
-      person: existingPerson
+      matchCount: searchData.matchCount,
+      sessionId: searchData.sessionId,
+      matches: searchData.matches || [],
+      sets: searchData.sets
     });
 
   } catch (error) {

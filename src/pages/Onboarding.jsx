@@ -68,11 +68,6 @@ export default function Onboarding() {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [phone, setPhone] = useState('');
-  
   const [userData, setUserData] = useState({});
   
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -87,8 +82,6 @@ export default function Onboarding() {
   const steps = [
     { label: 'Country' },
     { label: 'Identity' },
-    { label: 'Account' },
-    { label: 'Confirm' },
     { label: 'Terms' },
     { label: 'Verification' },
   ];
@@ -167,7 +160,7 @@ export default function Onboarding() {
         setPrivacyAccepted(true);
         
         // Jump to verification step
-        setCurrentStep(6);
+        setCurrentStep(4);
       }
     } catch (err) {
       console.error('❌ Failed to load session:', err);
@@ -350,25 +343,6 @@ export default function Onboarding() {
     }
   };
 
-  const formatPhone = (value) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  };
-
-  const handlePhoneChange = (e) => {
-    setPhone(formatPhone(e.target.value));
-  };
-
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const validatePassword = (password) => {
-    return password.length >= 8;
-  };
-
   const canProceed = () => {
     switch (currentStep) {
       case 1: // Country selection
@@ -395,13 +369,9 @@ export default function Onboarding() {
         }
         
         return docValid && fullName.trim() && dateOfBirth;
-      case 3: // Account details
-        return validateEmail(email) && validatePassword(password) && phone.replace(/\D/g, '').length >= 10;
-      case 4: // Confirmation
-        return true;
-      case 5: // Terms
+      case 3: // Terms
         return termsAccepted && privacyAccepted && kycPassed;
-      case 6: // Verification
+      case 4: // Verification
         return idvCompleted;
       default:
         return false;
@@ -418,14 +388,12 @@ export default function Onboarding() {
 
   const handleIDVComplete = async (result) => {
     if (result.verified) {
-      console.log('🎉 Verification complete! Storing data and redirecting to signup...');
+      console.log('🎉 Verification complete! Redirecting to signup...');
+      setIdvCompleted(true);
       
-      // Store all verification data in sessionStorage
+      // Store verification data in sessionStorage
       sessionStorage.setItem('verified_user_data', JSON.stringify({
-        email,
-        password,
         full_name: userData.full_name,
-        phone,
         date_of_birth: userData.date_of_birth,
         country: userData.country,
         id_type: userData.id_type,
@@ -435,16 +403,12 @@ export default function Onboarding() {
         timestamp: Date.now()
       }));
       
-      setIdvCompleted(true);
+      // Redirect to Base44's signup page
+      setTimeout(() => {
+        const returnUrl = encodeURIComponent(window.location.origin + createPageUrl('Home'));
+        window.location.href = `/auth/signup?next=${returnUrl}`;
+      }, 2000);
     }
-  };
-
-  const handleComplete = async () => {
-    console.log('➡️ Redirecting to platform signup...');
-    
-    // Redirect to Base44's signup page with pre-filled email
-    const returnUrl = encodeURIComponent(window.location.origin + createPageUrl('Home'));
-    window.location.href = `/auth/signup?email=${encodeURIComponent(email)}&next=${returnUrl}`;
   };
 
   const nextStep = async () => {
@@ -475,16 +439,14 @@ export default function Onboarding() {
         id_value: idValue,
         cpf: selectedCountry === 'BR' ? cpf : undefined
       });
-      setCurrentStep(prev => Math.min(prev + 1, 6));
-    } else if (currentStep === 5 && !kycPassed) {
+      setCurrentStep(prev => Math.min(prev + 1, 4));
+    } else if (currentStep === 3 && !kycPassed) {
       await handleKYCCheck();
       if (kycPassed) {
-        setCurrentStep(prev => Math.min(prev + 1, 6));
+        setCurrentStep(prev => Math.min(prev + 1, 4));
       }
-    } else if (currentStep === 6 && idvCompleted) {
-      await handleComplete();
     } else {
-      setCurrentStep(prev => Math.min(prev + 1, 6));
+      setCurrentStep(prev => Math.min(prev + 1, 4));
     }
   };
 
@@ -518,7 +480,7 @@ export default function Onboarding() {
         <div className="w-full max-w-md">
           <StepIndicator 
             currentStep={currentStep} 
-            totalSteps={6} 
+            totalSteps={4} 
             steps={steps}
           />
 
@@ -641,91 +603,8 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* Step 3: Account Details */}
+              {/* Step 3: Terms & KYC */}
               {currentStep === 3 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-2">
-                      {t('onb_create_account')}
-                    </h2>
-                    <p className="text-white/60">
-                      {t('onb_fill_details')}
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white/80">{t('onb_email')}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="seu@email.com"
-                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-white/80">{t('onb_phone')}</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={phone}
-                        onChange={handlePhoneChange}
-                        placeholder="(00) 00000-0000"
-                        maxLength={15}
-                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-white/80">{t('onb_password')}</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder={t('onb_password_placeholder')}
-                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      {password && password.length < 8 && (
-                        <p className="text-amber-400 text-xs">{t('onb_password_hint')}</p>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 4: Identity Confirmation */}
-              {currentStep === 4 && (
-                <motion.div
-                  key="step4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                  <IdentityConfirmation userData={userData} />
-                </motion.div>
-              )}
-
-              {/* Step 5: Terms & KYC */}
-              {currentStep === 5 && (
                 <motion.div
                   key="step4"
                   initial={{ opacity: 0, x: 20 }}
@@ -765,8 +644,8 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* Step 6: ID Verification */}
-              {currentStep === 6 && (
+              {/* Step 4: ID Verification */}
+              {currentStep === 4 && (
                 <motion.div
                   key="step6"
                   initial={{ opacity: 0, x: 20 }}
@@ -796,7 +675,7 @@ export default function Onboarding() {
                       <SDKVerification
                         onComplete={handleIDVComplete}
                         isMobile={isMobile}
-                        userData={{ ...userData, email, phone }}
+                        userData={userData}
                         sessionId={sdkSessionId}
                       />
                     </TabsContent>
@@ -805,7 +684,7 @@ export default function Onboarding() {
                       <DataCheckerVerification
                         onComplete={handleIDVComplete}
                         isMobile={isMobile}
-                        userData={{ ...userData, email, phone }}
+                        userData={userData}
                       />
                     </TabsContent>
                   </Tabs>
@@ -825,7 +704,7 @@ export default function Onboarding() {
                 {t('onb_back')}
               </Button>
 
-              {currentStep < 6 ? (
+              {currentStep < 4 && (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed() || loading}
@@ -840,22 +719,7 @@ export default function Onboarding() {
                     </>
                   )}
                 </Button>
-              ) : idvCompleted ? (
-                <Button
-                  onClick={handleComplete}
-                  disabled={loading}
-                  className="gold-gradient text-black font-semibold hover:opacity-90"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <>
-                      {t('onb_start_betting')}
-                      <Trophy className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              ) : null}
+              )}
             </div>
 
             {error && (

@@ -35,6 +35,19 @@ import ScopeVerification from '@/components/onboarding/ScopeVerification';
 import { useLanguage } from '@/components/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// 5-Bulls Logo SVG as inline component
+const BullsLogo = ({ className = "w-12 h-12" }) => (
+  <svg viewBox="0 0 186 187" className={className} fill="currentColor">
+    <path d="M100 10 L130 40 Q140 50 140 60 Q140 70 130 80 L100 110 L70 80 Q60 70 60 60 Q60 50 70 40 Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <path d="M 93 85 L 107 85 L 107 140 L 93 140 Z"/>
+    <path d="M 85 120 L 100 135 L 115 120"/>
+    <circle cx="93" cy="60" r="8"/>
+    <circle cx="107" cy="60" r="8"/>
+    <path d="M 40 30 Q 35 25 30 25 Q 25 25 22 28 Q 18 32 20 38 L 35 50"/>
+    <path d="M 160 30 Q 165 25 170 25 Q 175 25 178 28 Q 182 32 180 38 L 165 50"/>
+  </svg>
+);
+
 export default function Onboarding() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -529,13 +542,10 @@ export default function Onboarding() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
-            <span className="text-black font-black text-lg">5B</span>
-          </div>
-          <div className="font-bold text-base sm:text-lg md:text-xl whitespace-nowrap">
-            <span className="gold-text">5-Bulls</span>
-            <span className="text-white/80">Betting</span>
+        <div className="flex items-center gap-3">
+          <BullsLogo className="w-12 h-12 text-[#D4AF37] flex-shrink-0" />
+          <div className="font-bold text-lg sm:text-xl whitespace-nowrap">
+            <span className="text-[#D4AF37]">5-BULLS</span>
           </div>
         </div>
       </header>

@@ -655,7 +655,7 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
     const poll = async () => {
       try {
         const elapsed = Date.now() - startTime;
-        
+
         if (elapsed > maxDuration) {
           throw new Error('Session timeout - please try again');
         }
@@ -664,17 +664,19 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
           sessionId
         });
 
+        console.log('📥 Desktop poll response:', JSON.stringify(pollResponse.data, null, 2));
+
         if (pollResponse.data.error) {
           // Handle "Session not found" gracefully during initial polling
           if (pollResponse.data.error === 'Session not found') {
             notFoundCount++;
             console.warn(`⏳ Session not found yet (attempt ${notFoundCount}), continuing to poll...`);
-            
+
             // If not found after many attempts, something is wrong
             if (notFoundCount > 10) {
               throw new Error('Session creation failed - please try again');
             }
-            
+
             delay = Math.min(delay * 1.2, maxDelay);
             pollTimeoutRef.current = setTimeout(poll, delay);
             return;
@@ -685,19 +687,21 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
         // Reset not found counter once we get a valid response
         notFoundCount = 0;
 
-        console.log('📥 Desktop session status:', pollResponse.data.status);
+        console.log('📥 Desktop session status:', pollResponse.data.status, 'completed:', pollResponse.data.completed);
 
-        if (pollResponse.data.completed) {
-          console.log('✅ Desktop session completed!');
-          
+        if (pollResponse.data.completed === true) {
+          console.log('🎉 Desktop session completed! Transitioning to success...');
+
           // Clear polling timeout
           if (pollTimeoutRef.current) {
             clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
           }
-          
+
           setStep('success');
           setTimeout(() => onComplete(pollResponse.data.result), 2000);
         } else {
+          console.log('⏳ Still waiting... polling again in', delay, 'ms');
           delay = Math.min(delay * 1.2, maxDelay);
           pollTimeoutRef.current = setTimeout(poll, delay);
         }

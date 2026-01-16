@@ -11,40 +11,26 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
+    console.log('📝 Creating user account for:', email);
+    
+    // Use Base44 SDK to create the user
     const base44 = createClientFromRequest(req);
     
-    // Create the user account using service role
-    const signUpUrl = `${Deno.env.get('BASE44_API_URL') || 'https://api.base44.com'}/auth/signup`;
-    
-    const signUpResponse = await fetch(signUpUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-app-id': Deno.env.get('BASE44_APP_ID')
-      },
-      body: JSON.stringify({
-        email,
-        password,
-        metadata: userData
-      })
+    const result = await base44.asServiceRole.auth.signUp({
+      email,
+      password,
+      ...userData
     });
-
-    if (!signUpResponse.ok) {
-      const error = await signUpResponse.json();
-      throw new Error(error.message || 'Failed to create account');
-    }
-
-    const result = await signUpResponse.json();
     
-    console.log('✅ User created successfully:', result.user?.id);
+    console.log('✅ User created successfully:', result?.id);
 
     return Response.json({
       success: true,
-      user: result.user
+      user: result
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('❌ Error creating user:', error.message);
     return Response.json({ 
       error: error.message 
     }, { status: 500 });

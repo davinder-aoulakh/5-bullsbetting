@@ -546,14 +546,27 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
               customerReference: customerReferenceRef.current
             };
 
-            // If this was a mobile session, update it
+            // If this was a mobile session, update it BEFORE showing success
             if (desktopSessionId) {
-              console.log('📱 Updating desktop session with results...');
-              await base44.functions.invoke('updateSDKVerificationSession', {
-                sessionId: desktopSessionId,
-                status: 'completed',
-                result: resultData
-              });
+              console.log('📱 Mobile flow: Updating desktop session...', desktopSessionId);
+              try {
+                const updateResponse = await base44.functions.invoke('updateSDKVerificationSession', {
+                  sessionId: desktopSessionId,
+                  status: 'completed',
+                  result: resultData
+                });
+                console.log('✅ Desktop session update response:', updateResponse.data);
+                
+                if (updateResponse.data.error) {
+                  console.error('❌ Failed to update session:', updateResponse.data.error);
+                } else {
+                  console.log('✅ Desktop session marked as completed!');
+                }
+              } catch (updateErr) {
+                console.error('❌ Exception updating desktop session:', updateErr);
+              }
+            } else {
+              console.log('ℹ️ No desktopSessionId - this is a direct mobile flow');
             }
 
             setStep('success');

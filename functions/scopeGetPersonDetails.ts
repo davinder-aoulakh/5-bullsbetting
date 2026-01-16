@@ -109,12 +109,13 @@ Deno.serve(async (req) => {
       attempts++;
       console.log(`📊 [scopeGetPersonDetails] Polling attempt ${attempts}/${maxPolls}`);
 
-      const detailsResponse = await fetch(`${SCOPE_API_URL}/persons/${personId}`, {
-        method: 'GET',
+      const detailsResponse = await fetch(`${SCOPE_API_URL}/api/v4/GetPersonDetails`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${SCOPE_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ person_id: personId })
       });
 
       console.log('📊 [scopeGetPersonDetails] Response status:', detailsResponse.status);

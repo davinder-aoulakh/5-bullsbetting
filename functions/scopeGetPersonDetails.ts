@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     console.log('📤 [scopeGetPersonDetails] Request payload:', JSON.stringify(requestPayload, null, 2));
     console.log('🌐 [scopeGetPersonDetails] Request URL:', `${SCOPE_API_URL}/GetPersonDetails`);
 
+    const requestStart = Date.now();
     const detailsResponse = await fetch(`${SCOPE_API_URL}/GetPersonDetails`, {
       method: 'POST',
       headers: {
@@ -45,21 +46,38 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify(requestPayload)
     });
+    const requestDuration = Date.now() - requestStart;
 
+    console.log('📊 [scopeGetPersonDetails] Response received in', requestDuration, 'ms');
     console.log('📊 [scopeGetPersonDetails] Response status:', detailsResponse.status);
+    console.log('📊 [scopeGetPersonDetails] Response statusText:', detailsResponse.statusText);
     console.log('📊 [scopeGetPersonDetails] Response headers:', Object.fromEntries(detailsResponse.headers.entries()));
 
     if (!detailsResponse.ok) {
       const errorText = await detailsResponse.text();
-      console.error('❌ [scopeGetPersonDetails] API Error:', {
+      console.error('❌ [scopeGetPersonDetails] API Error Details:', {
         status: detailsResponse.status,
         statusText: detailsResponse.statusText,
-        body: errorText
+        url: `${SCOPE_API_URL}/GetPersonDetails`,
+        requestPayload: requestPayload,
+        responseBody: errorText,
+        responseHeaders: Object.fromEntries(detailsResponse.headers.entries())
       });
+      
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errorText);
+        console.error('❌ [scopeGetPersonDetails] Parsed error:', parsedError);
+      } catch (e) {
+        console.error('❌ [scopeGetPersonDetails] Error response is not JSON:', errorText);
+      }
+      
       return Response.json({ 
         error: 'Failed to get person details from Scope',
         details: errorText,
-        status: detailsResponse.status
+        parsedError: parsedError || null,
+        status: detailsResponse.status,
+        url: `${SCOPE_API_URL}/GetPersonDetails`
       }, { status: detailsResponse.status });
     }
 

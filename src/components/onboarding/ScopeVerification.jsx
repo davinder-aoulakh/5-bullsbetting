@@ -41,12 +41,31 @@ export default function ScopeVerification({ userData, sessionId, onComplete }) {
       const response = await base44.functions.invoke('scopeCompleteVerification', requestPayload);
 
       console.log('📊 [ScopeVerification] Response status:', response.status);
+      console.log('📊 [ScopeVerification] Response headers:', response.headers);
       console.log('📊 [ScopeVerification] Response data:', JSON.stringify(response.data, null, 2));
 
       if (response.data.error) {
-        console.error('❌ [ScopeVerification] API returned error:', response.data.error);
-        console.error('📋 [ScopeVerification] Error stack:', response.data.stack);
-        throw new Error(response.data.error);
+        console.error('❌ [ScopeVerification] API returned error:', {
+          error: response.data.error,
+          details: response.data.details,
+          parsedError: response.data.parsedError,
+          stack: response.data.stack,
+          status: response.data.status,
+          url: response.data.url
+        });
+        
+        // Create user-friendly error message
+        let userMessage = response.data.error;
+        if (response.data.details) {
+          try {
+            const parsedDetails = JSON.parse(response.data.details);
+            userMessage += `: ${parsedDetails.message || parsedDetails.error || response.data.details}`;
+          } catch (e) {
+            userMessage += `: ${response.data.details}`;
+          }
+        }
+        
+        throw new Error(userMessage);
       }
 
       const { status: verificationStatus, approved, reason, risk_score, details } = response.data;

@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
     console.log('🌐 [scopeSearchPerson] Request URL:', `${SCOPE_API_URL}/SearchPerson`);
 
     // Search for person in Scope
+    const requestStart = Date.now();
     const searchResponse = await fetch(`${SCOPE_API_URL}/SearchPerson`, {
       method: 'POST',
       headers: {
@@ -68,21 +69,38 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify(searchPayload)
     });
+    const requestDuration = Date.now() - requestStart;
 
+    console.log('📊 [scopeSearchPerson] Response received in', requestDuration, 'ms');
     console.log('📊 [scopeSearchPerson] Response status:', searchResponse.status);
+    console.log('📊 [scopeSearchPerson] Response statusText:', searchResponse.statusText);
     console.log('📊 [scopeSearchPerson] Response headers:', Object.fromEntries(searchResponse.headers.entries()));
 
     if (!searchResponse.ok) {
       const errorText = await searchResponse.text();
-      console.error('❌ [scopeSearchPerson] API Error:', {
+      console.error('❌ [scopeSearchPerson] API Error Details:', {
         status: searchResponse.status,
         statusText: searchResponse.statusText,
-        body: errorText
+        url: `${SCOPE_API_URL}/SearchPerson`,
+        requestPayload: searchPayload,
+        responseBody: errorText,
+        responseHeaders: Object.fromEntries(searchResponse.headers.entries())
       });
+      
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errorText);
+        console.error('❌ [scopeSearchPerson] Parsed error:', parsedError);
+      } catch (e) {
+        console.error('❌ [scopeSearchPerson] Error response is not JSON:', errorText);
+      }
+      
       return Response.json({ 
         error: 'Failed to search in Scope CDD',
         details: errorText,
-        status: searchResponse.status
+        parsedError: parsedError || null,
+        status: searchResponse.status,
+        url: `${SCOPE_API_URL}/SearchPerson`
       }, { status: searchResponse.status });
     }
 

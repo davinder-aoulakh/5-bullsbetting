@@ -183,15 +183,26 @@ Deno.serve(async (req) => {
 
     // Step 1: Search for person
     console.log('🔍 [scopeCompleteVerification] Step 1: Searching for person...');
+    console.log('⏱️ [scopeCompleteVerification] Starting search at:', new Date().toISOString());
+    
+    const searchStart = Date.now();
     const searchResponse = await base44.asServiceRole.functions.invoke('scopeSearchPerson', {
       userData
     });
+    const searchDuration = Date.now() - searchStart;
 
-    console.log('📊 [scopeCompleteVerification] Search response:', JSON.stringify(searchResponse.data, null, 2));
+    console.log(`⏱️ [scopeCompleteVerification] Search completed in ${searchDuration}ms`);
+    console.log('📊 [scopeCompleteVerification] Search response status:', searchResponse.status);
+    console.log('📊 [scopeCompleteVerification] Search response data:', JSON.stringify(searchResponse.data, null, 2));
 
     if (searchResponse.data.error) {
-      console.error('❌ [scopeCompleteVerification] Search failed:', searchResponse.data.error);
-      throw new Error(searchResponse.data.error);
+      console.error('❌ [scopeCompleteVerification] Search failed with error:', {
+        error: searchResponse.data.error,
+        details: searchResponse.data.details,
+        status: searchResponse.data.status,
+        url: searchResponse.data.url
+      });
+      throw new Error(`Search failed: ${searchResponse.data.error} - ${searchResponse.data.details || 'No additional details'}`);
     }
 
     const { matchCount, matches, sessionId: scopeSessionId } = searchResponse.data;
@@ -228,21 +239,37 @@ Deno.serve(async (req) => {
 
     // Step 2: Get details for each match
     console.log('📊 [scopeCompleteVerification] Step 2: Getting person details for matches...');
+    console.log(`🔢 [scopeCompleteVerification] Processing ${matches.length} match(es)`);
     const personDetails = [];
 
-    for (const match of matches) {
-      console.log(`🔍 [scopeCompleteVerification] Getting details for: ${match.name} (${match.complianceId})`);
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      console.log(`🔍 [scopeCompleteVerification] [${i + 1}/${matches.length}] Getting details for:`, {
+        name: match.name,
+        complianceId: match.complianceId,
+        score: match.score,
+        flags: match.flags
+      });
       
+      const detailsStart = Date.now();
       const detailsResponse = await base44.asServiceRole.functions.invoke('scopeGetPersonDetails', {
         complianceId: match.complianceId
       });
+      const detailsDuration = Date.now() - detailsStart;
+
+      console.log(`⏱️ [scopeCompleteVerification] Details request completed in ${detailsDuration}ms`);
 
       if (detailsResponse.data.error) {
-        console.error('❌ [scopeCompleteVerification] Details failed:', detailsResponse.data.error);
+        console.error(`❌ [scopeCompleteVerification] Details failed for ${match.name}:`, {
+          error: detailsResponse.data.error,
+          details: detailsResponse.data.details,
+          status: detailsResponse.data.status
+        });
         // Continue with other matches even if one fails
         continue;
       }
 
+      console.log(`✅ [scopeCompleteVerification] Successfully retrieved details for ${match.name}`);
       personDetails.push(detailsResponse.data.person);
     }
 
@@ -271,10 +298,25 @@ Deno.serve(async (req) => {
       screening_date: new Date().toISOString()
     };
 
-    console.log('💾 [scopeCompleteVerification] Saving verification record');
+    console.log('💾 [scopeCompleteVerification] Saving verification record:', {
+      userId: verificationRecord.user_id,
+      status: verificationRecord.status,
+      riskScore: verificationRecord.risk_score,
+      sanctionsHit: verificationRecord.sanctions_hit,
+      pepHit: verificationRecord.pep_hit
+    });
 
-    const savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
-    console.log('✅ [scopeCompleteVerification] Verification saved with ID:', savedVerification.id);
+    try {
+      const savedVerification = await base44.asServiceRole.entities.ScopeVerification.create(verificationRecord);
+      console.log('✅ [scopeCompleteVerification] Verification saved with ID:', savedVerification.id);
+    } catch (dbError) {
+      console.error('❌ [scopeCompleteVerification] Database save failed:', {
+        message: dbError.message,
+        stack: dbError.stack,
+        record: verificationRecord
+      });
+      throw dbError;
+    }
 
     const result = {
       status: evaluation.status,

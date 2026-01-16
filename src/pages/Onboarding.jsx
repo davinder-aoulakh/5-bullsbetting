@@ -115,24 +115,29 @@ export default function Onboarding() {
     try {
       setLoading(true);
       
-      // Fetch the session to get user data
-      const sessions = await base44.entities.VerificationSession.filter({
-        session_id: sessionId
+      // Fetch the session via backend function (no auth required during onboarding)
+      const response = await base44.functions.invoke('pollSDKVerificationSession', {
+        sessionId
       });
       
-      if (sessions && sessions.length > 0) {
-        const session = sessions[0];
-        
-        // Validate session expiry
-        if (session.expires_at && new Date(session.expires_at) < new Date()) {
-          throw new Error('Verification session has expired. Please start the registration process again.');
-        }
+      if (response.data && !response.data.error) {
+        const session = response.data;
         
         // Check if session is already used
         if (session.status === 'completed' || session.status === 'failed') {
           throw new Error('This verification session has already been used.');
         }
-        const sessionUserData = session.user_data;
+        
+        // Get the full session data with user_data
+        const fullSessionResponse = await base44.functions.invoke('getSDKVerificationSessionData', {
+          sessionId
+        });
+        
+        if (fullSessionResponse.data.error) {
+          throw new Error(fullSessionResponse.data.error);
+        }
+        
+        const sessionUserData = fullSessionResponse.data.user_data;
         
         // Populate form data from session
         setUserData(sessionUserData);
@@ -170,10 +175,12 @@ export default function Onboarding() {
         
         // Jump to verification step
         setCurrentStep(4);
+      } else {
+        throw new Error(response.data?.error || 'Session not found');
       }
     } catch (err) {
       console.error('❌ Failed to load session:', err);
-      setError('Failed to load verification session');
+      setError(err.message || 'Failed to load verification session');
     } finally {
       setLoading(false);
     }

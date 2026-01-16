@@ -263,15 +263,16 @@ export default function SDKVerification({ onComplete, userData, isMobile }) {
             imageSummary: resultResponse.data.imageSummary
           }));
 
-          // Extract COMPARE image from result
+          // Extract COMPARE image from result (check type, pageType, and documentType)
           const compareImage = resultResponse.data.images?.find(
-            img => img.type === 'COMPARE' || img.pageType === 'COMPARE'
+            img => img.type === 'COMPARE' || img.pageType === 'COMPARE' || img.documentType === 'COMPARE'
           );
 
           if (!compareImage) {
             console.error('❌ No COMPARE image found. Available images:', resultResponse.data.images?.map(img => ({
               type: img.type,
-              pageType: img.pageType
+              pageType: img.pageType,
+              documentType: img.documentType
             })));
             throw new Error('No COMPARE image found in ID verification result');
           }

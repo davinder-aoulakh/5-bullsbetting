@@ -77,6 +77,16 @@ Deno.serve(async (req) => {
       requestBody.valid_challenges = valid_challenges;
     }
 
+    console.log('📊 Face verification payload details:', {
+      transactionId,
+      imagesCount: images?.length,
+      imageTypes: images?.map(img => img.type),
+      imageSizes: images?.map(img => img.data?.length || 0),
+      validChallenges: requestBody.valid_challenges,
+      firstImageType: images?.[0]?.type,
+      firstImageSizeKB: Math.round((images?.[0]?.data?.length || 0) / 1024)
+    });
+
     const faceVerifyResponse = await fetch(`${DATACHECKER_BASE_URL}/api/v2/faceverify`, {
       method: 'POST',
       headers: {
@@ -86,12 +96,27 @@ Deno.serve(async (req) => {
       body: JSON.stringify(requestBody)
     });
 
+    console.log('📥 DataChecker face verify response status:', faceVerifyResponse.status);
+
     if (!faceVerifyResponse.ok) {
-      const error = await faceVerifyResponse.text();
-      console.error('❌ Face verify submission error:', error);
+      const errorText = await faceVerifyResponse.text();
+      console.error('❌ Face verify API error [status:', faceVerifyResponse.status, ']');
+      console.error('❌ Error response body:', errorText);
+      
+      // Try to parse error as JSON for more details
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('❌ Parsed error:', JSON.stringify(errorJson, null, 2));
+        errorDetails = errorJson;
+      } catch (e) {
+        console.error('❌ Raw error text:', errorText);
+      }
+      
       return Response.json({ 
         error: 'Failed to submit face verification',
-        details: error
+        details: errorDetails,
+        status: faceVerifyResponse.status
       }, { status: faceVerifyResponse.status });
     }
 

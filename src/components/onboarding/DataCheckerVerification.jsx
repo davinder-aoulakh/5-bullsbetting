@@ -154,6 +154,26 @@ export default function DataCheckerVerification({ onComplete, userData, isMobile
       const approved = resultResponse.data.approved;
       console.log('🎯 Verification result:', approved ? 'APPROVED ✅' : 'REJECTED ❌');
       
+      // Create verification log
+      try {
+        await base44.functions.invoke('createVerificationLog', {
+          user_email: userData.email,
+          user_name: userData.full_name,
+          verification_type: resultResponse.data.faceVerify ? 'facial_recognition' : 'id_document',
+          provider: 'datachecker',
+          reference_id: resultResponse.data.transactionId,
+          status: approved ? 'passed' : 'failed',
+          result_details: {
+            message: approved ? 'Verification passed' : 'Verification failed',
+            identity_result: resultResponse.data.identity?.result || null,
+            face_result: resultResponse.data.faceVerify?.result || null,
+            document_type: resultResponse.data.identity?.data?.documentType || null
+          }
+        });
+      } catch (logError) {
+        console.error('⚠️ Failed to create verification log:', logError);
+      }
+      
       setVerificationResult(resultResponse.data);
       setStatus(approved ? 'success' : 'failed');
 

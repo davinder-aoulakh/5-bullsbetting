@@ -289,6 +289,25 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
           compareImageRef.current = compareImage.data;
           console.log('✅ COMPARE image extracted from ID result');
 
+          // Create ID verification log
+          try {
+            await base44.functions.invoke('createVerificationLog', {
+              user_email: userData.email,
+              user_name: userData.full_name,
+              verification_type: 'id_document',
+              provider: 'datachecker',
+              reference_id: resultResponse.data.transactionId,
+              status: resultResponse.data.identityApproved ? 'passed' : 'failed',
+              result_details: {
+                message: resultResponse.data.identityApproved ? 'ID verification passed' : 'ID verification failed',
+                identity_result: resultResponse.data.identity?.result || null,
+                document_type: resultResponse.data.identity?.data?.documentType || null
+              }
+            });
+          } catch (logError) {
+            console.error('⚠️ Failed to create ID verification log:', logError);
+          }
+
           // Check if ID was approved
           if (!resultResponse.data.identityApproved) {
             console.error('❌ Identity not approved');
@@ -534,6 +553,24 @@ export default function SDKVerification({ onComplete, userData, isMobile, sessio
 
           // Final approval decision
           const finalApproved = resultResponse.data.faceApproved === true;
+
+          // Create face verification log
+          try {
+            await base44.functions.invoke('createVerificationLog', {
+              user_email: userData.email,
+              user_name: userData.full_name,
+              verification_type: 'facial_recognition',
+              provider: 'datachecker',
+              reference_id: resultResponse.data.transactionId,
+              status: finalApproved ? 'passed' : 'failed',
+              result_details: {
+                message: finalApproved ? 'Face verification passed' : 'Face verification failed',
+                face_result: resultResponse.data.faceVerify?.result || null
+              }
+            });
+          } catch (logError) {
+            console.error('⚠️ Failed to create face verification log:', logError);
+          }
 
           if (finalApproved) {
             console.log('🎉 Verification successful!');

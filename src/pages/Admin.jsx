@@ -253,12 +253,8 @@ export default function Admin() {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <p className="text-sm text-white font-medium">
-                            {logUser?.full_name || log.user_name || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-white/50">
-                            {logUser?.email || log.user_email || log.user_id}
-                          </p>
+                          <p className="text-sm text-white font-medium">{logUser?.full_name || 'Unknown'}</p>
+                          <p className="text-xs text-white/50">{logUser?.email || log.user_id}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-white">
@@ -315,10 +311,10 @@ export default function Admin() {
                 <div>
                   <p className="text-white/50 text-sm mb-1">User</p>
                   <p className="text-white font-medium">
-                    {getUserById(selectedLog.user_id)?.full_name || selectedLog.user_name || 'Unknown'}
+                    {getUserById(selectedLog.user_id)?.full_name || 'Unknown'}
                   </p>
                   <p className="text-white/50 text-xs">
-                    {getUserById(selectedLog.user_id)?.email || selectedLog.user_email || selectedLog.user_id}
+                    {getUserById(selectedLog.user_id)?.email || selectedLog.user_id}
                   </p>
                 </div>
                 <div>

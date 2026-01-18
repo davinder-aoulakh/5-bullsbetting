@@ -269,8 +269,8 @@ export default function Onboarding() {
         isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);
         console.log('🇦🇺 AU validation:', { cleanValue, regex: /^[A-Z]{2}\d{7}$/.test(cleanValue), isValid });
         break;
-      case 'NL': // Dutch passport: 2 letters + 7 digits
-        isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);
+      case 'NL': // Dutch passport: 2 letters + 7 alphanumeric characters
+        isValid = /^[A-Z]{2}[A-Z0-9]{7}$/.test(cleanValue);
         break;
       case 'CW': // Curacao passport (similar to Dutch)
         isValid = /^[A-Z]{2}\d{7}$/.test(cleanValue);

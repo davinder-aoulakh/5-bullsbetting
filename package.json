@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.34",
-    "@base44/vite-plugin": "^1.0.23",
+    "@base44/sdk": "^0.8.35",
+    "@base44/vite-plugin": "^1.0.24",
     "@datachecker/autocapture": "latest",
     "@datachecker/faceverify": "latest",
     "@hello-pangea/dnd": "^17.0.0",

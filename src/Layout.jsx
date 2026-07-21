@@ -51,6 +51,12 @@ function LayoutContent({ children, currentPageName }) {
     try {
       const userData = await base44.auth.me();
       setUser(userData);
+
+      // KYC gate: redirect to Onboarding if user hasn't completed identity verification
+      if (userData && userData.kyc_status !== 'approved' && currentPageName !== 'Onboarding') {
+        window.location.href = '/Onboarding';
+        return;
+      }
     } catch (e) {
       setUser(null);
     }

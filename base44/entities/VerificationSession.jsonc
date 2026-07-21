@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Unique session identifier"
     },
+    "user_id": {
+      "type": "string",
+      "description": "Linked user id once the user has completed login/signup after verification"
+    },
     "user_data": {
       "type": "object",
       "description": "User data for verification"

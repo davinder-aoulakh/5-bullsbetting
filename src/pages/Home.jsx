@@ -32,6 +32,15 @@ export default function Home() {
     try {
       const userData = await base44.auth.me();
       setUser(userData);
+
+      if (userData && userData.kyc_status !== 'approved') {
+        // Attempt to finalize verification (reconcile the pre-login Didit session)
+        const res = await base44.functions.invoke('finalizeUserVerification', {});
+        if (!res.data?.verified) {
+          window.location.href = '/Onboarding';
+          return;
+        }
+      }
     } catch (e) {
       setUser(null);
     }

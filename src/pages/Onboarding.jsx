@@ -120,6 +120,11 @@ export default function Onboarding() {
       // User redirected back from Didit's hosted flow on mobile
       console.log('📱 Didit session detected in URL:', diditSession);
       setDiditSessionId(diditSession);
+      // Restore userData from sessionStorage if available
+      try {
+        const saved = sessionStorage.getItem('onboarding_user_data');
+        if (saved) setUserData(JSON.parse(saved));
+      } catch (e) { /* ignore */ }
       setCurrentStep(4);
     } else if (sessionId) {
       // SDK session from QR code
@@ -456,12 +461,17 @@ export default function Onboarding() {
 
   const handleIDVComplete = async (result) => {
     if (result.verified === true && result.sessionId) {
-      console.log('🎉 ID Verification complete! Moving to compliance check...');
-      setUserData(prev => ({ ...prev, didit_session_id: result.sessionId }));
+      console.log('🎉 ID Verification complete! Redirecting to login...');
       setIdvCompleted(true);
+      // Finalize KYC on the user record
+      try {
+        await base44.functions.invoke('finalizeUserVerification', { sessionId: result.sessionId });
+      } catch (e) {
+        console.warn('⚠️ finalizeUserVerification failed (non-blocking):', e.message);
+      }
       setTimeout(() => {
-        setCurrentStep(5);
-      }, 1000);
+        base44.auth.redirectToLogin(createPageUrl('Home'));
+      }, 1500);
     }
   };
 
@@ -513,14 +523,16 @@ export default function Onboarding() {
         idType = 'identity_card';
       }
       
-      setUserData({
+      const newUserData = {
         full_name: fullName,
         date_of_birth: dateOfBirth,
         country: selectedCountry,
         id_type: idType,
         id_value: idValue,
         cpf: selectedCountry === 'BR' ? cpf : undefined
-      });
+      };
+      setUserData(newUserData);
+      sessionStorage.setItem('onboarding_user_data', JSON.stringify(newUserData));
       setCurrentStep(prev => Math.min(prev + 1, 4));
     } else if (currentStep === 3 && !kycPassed) {
       await handleKYCCheck();
@@ -743,15 +755,6 @@ export default function Onboarding() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-2">
-                      Identity Verification
-                    </h2>
-                    <p className="text-white/60">
-                      Complete your identity check to continue
-                    </p>
-                  </div>
-
                   <DiditVerification
                     onComplete={handleIDVComplete}
                     isMobile={isMobile}
@@ -790,7 +793,7 @@ export default function Onboarding() {
                 {t('onb_back')}
               </Button>
 
-              {currentStep < 5 && (
+              {currentStep < 4 && (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed() || loading || isVerificationActive}

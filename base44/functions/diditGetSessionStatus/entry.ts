@@ -24,6 +24,11 @@ Deno.serve(async (req) => {
 
     if (!diditRes.ok) {
       const errBody = await diditRes.text();
+      // 404 means Didit hasn't produced a decision yet (session still in progress) — treat as pending
+      if (diditRes.status === 404) {
+        console.log('ℹ️ [diditGetSessionStatus] Decision not ready yet (404) — returning pending');
+        return Response.json({ status: 'pending', decision: null, failureReason: null });
+      }
       console.error('❌ [diditGetSessionStatus] Didit API error:', diditRes.status, errBody);
       return Response.json(
         { error: `Didit API error ${diditRes.status}`, details: errBody },

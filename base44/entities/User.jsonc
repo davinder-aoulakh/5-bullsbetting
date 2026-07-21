@@ -1,0 +1,98 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "cpf": {
+      "type": "string",
+      "description": "Brazilian CPF number (for Brazilian users)"
+    },
+    "country": {
+      "type": "string",
+      "enum": [
+        "BR",
+        "AU",
+        "NL",
+        "CW"
+      ],
+      "description": "User's country"
+    },
+    "id_type": {
+      "type": "string",
+      "enum": [
+        "cpf",
+        "passport",
+        "driver_license",
+        "sedula",
+        "identity_card"
+      ],
+      "description": "Type of identification document used"
+    },
+    "id_value": {
+      "type": "string",
+      "description": "Identification document number"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "wallet_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Current wallet balance in BRL"
+    },
+    "kyc_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "KYC verification status"
+    },
+    "verification_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When KYC was completed"
+    },
+    "last_login": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope_verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "manual_review"
+      ],
+      "description": "Scope CDD compliance status"
+    },
+    "scope_person_id": {
+      "type": "string",
+      "description": "Scope CDD person ID"
+    },
+    "scope_rejection_reason": {
+      "type": "string",
+      "description": "Reason for Scope rejection if applicable"
+    },
+    "kyc_status": {
+      "type": "string",
+      "enum": [
+        "unverified",
+        "pending",
+        "approved",
+        "declined",
+        "in_review"
+      ],
+      "default": "unverified",
+      "description": "KYC verification status controlling access to betting features"
+    }
+  },
+  "required": [
+    "country",
+    "id_type",
+    "date_of_birth"
+  ]
+}

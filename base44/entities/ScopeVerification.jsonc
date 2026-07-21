@@ -1,0 +1,58 @@
+{
+  "name": "ScopeVerification",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "manual_review",
+        "error"
+      ],
+      "default": "pending",
+      "description": "Verification status"
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "Overall risk score (0-100)"
+    },
+    "sanctions_hit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether person is on sanctions list"
+    },
+    "pep_hit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether person is a PEP (Politically Exposed Person)"
+    },
+    "adverse_media_hit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether adverse media found"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason for rejection if status is rejected"
+    },
+    "scope_response": {
+      "type": "object",
+      "description": "Full response from Scope API"
+    },
+    "screening_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When screening was completed"
+    }
+  },
+  "required": [
+    "user_id",
+    "status"
+  ]
+}

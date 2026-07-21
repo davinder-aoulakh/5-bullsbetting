@@ -1,0 +1,78 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "deposit",
+        "withdrawal",
+        "bet_placed",
+        "bet_won",
+        "bet_refund",
+        "bonus",
+        "adjustment"
+      ],
+      "description": "Type of transaction"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Transaction amount in BRL"
+    },
+    "balance_before": {
+      "type": "number"
+    },
+    "balance_after": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "bank_transfer",
+        "boleto",
+        "debit_card"
+      ],
+      "description": "Payment method used"
+    },
+    "payment_reference": {
+      "type": "string",
+      "description": "External payment reference ID"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "bet_id": {
+      "type": "string",
+      "description": "Related bet ID if applicable"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "Admin who reviewed (for withdrawals)"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "type",
+    "amount"
+  ]
+}

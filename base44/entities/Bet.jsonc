@@ -1,0 +1,111 @@
+{
+  "name": "Bet",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "bet_type": {
+      "type": "string",
+      "enum": [
+        "single",
+        "parlay"
+      ],
+      "description": "Type of bet"
+    },
+    "selections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "selection": {
+            "type": "string"
+          },
+          "odds": {
+            "type": "number"
+          },
+          "sport": {
+            "type": "string"
+          },
+          "league": {
+            "type": "string"
+          },
+          "event_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "won",
+              "lost",
+              "void",
+              "cashout"
+            ]
+          }
+        }
+      }
+    },
+    "stake": {
+      "type": "number",
+      "description": "Amount wagered in BRL"
+    },
+    "total_odds": {
+      "type": "number",
+      "description": "Combined odds for the bet"
+    },
+    "potential_return": {
+      "type": "number",
+      "description": "Potential winnings including stake"
+    },
+    "actual_return": {
+      "type": "number",
+      "description": "Actual return after settlement"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "won",
+        "lost",
+        "partially_won",
+        "void",
+        "cashed_out"
+      ],
+      "default": "pending"
+    },
+    "settled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "desktop",
+        "mobile",
+        "tablet"
+      ]
+    }
+  },
+  "required": [
+    "user_id",
+    "bet_type",
+    "selections",
+    "stake",
+    "total_odds"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "name": "SportsEvent",
+  "type": "object",
+  "properties": {
+    "sport": {
+      "type": "string",
+      "enum": [
+        "soccer",
+        "basketball",
+        "volleyball",
+        "mma",
+        "tennis",
+        "esports",
+        "american_football"
+      ],
+      "description": "Sport category"
+    },
+    "league": {
+      "type": "string",
+      "description": "League or competition name"
+    },
+    "home_team": {
+      "type": "string"
+    },
+    "away_team": {
+      "type": "string"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "upcoming",
+        "live",
+        "finished",
+        "cancelled",
+        "postponed"
+      ],
+      "default": "upcoming"
+    },
+    "current_score": {
+      "type": "object",
+      "properties": {
+        "home": {
+          "type": "number"
+        },
+        "away": {
+          "type": "number"
+        }
+      }
+    },
+    "current_minute": {
+      "type": "number",
+      "description": "Current match minute for live events"
+    },
+    "markets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "selections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "odds": {
+                  "type": "number"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "suspended",
+                    "settled"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "home_score": {
+          "type": "number"
+        },
+        "away_score": {
+          "type": "number"
+        },
+        "winner": {
+          "type": "string",
+          "enum": [
+            "home",
+            "away",
+            "draw"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "sport",
+    "league",
+    "home_team",
+    "away_team",
+    "start_time"
+  ]
+}

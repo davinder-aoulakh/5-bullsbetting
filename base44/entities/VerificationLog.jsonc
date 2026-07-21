@@ -1,0 +1,72 @@
+{
+  "name": "VerificationLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "verification_type": {
+      "type": "string",
+      "enum": [
+        "cpf_validation",
+        "id_document",
+        "facial_recognition",
+        "kyc_screening",
+        "self_exclusion_check",
+        "pep_check",
+        "sanctions_check"
+      ]
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "datachecker",
+        "scope",
+        "internal"
+      ]
+    },
+    "reference_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "initiated",
+        "pending",
+        "passed",
+        "failed",
+        "error",
+        "manual_review"
+      ]
+    },
+    "result_details": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "confidence_score": {
+          "type": "number"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "device_info": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "verification_type",
+    "provider",
+    "status"
+  ]
+}

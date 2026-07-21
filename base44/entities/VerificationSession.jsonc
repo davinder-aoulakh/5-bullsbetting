@@ -1,0 +1,78 @@
+{
+  "name": "VerificationSession",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "user_data": {
+      "type": "object",
+      "description": "User data for verification"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "approved",
+        "declined",
+        "in_review",
+        "abandoned",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "verification_mode": {
+      "type": "string",
+      "enum": [
+        "sdk",
+        "link"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "description": "Verification result data"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session expiration"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "datachecker_sdk",
+        "datachecker_link",
+        "didit"
+      ],
+      "default": "didit",
+      "description": "Identity verification provider used for this session"
+    },
+    "didit_session_token": {
+      "type": "string",
+      "description": "Session token returned by DIDIT"
+    },
+    "verification_url": {
+      "type": "string",
+      "description": "URL to redirect user to for verification"
+    },
+    "decision": {
+      "type": "object",
+      "description": "Raw decision payload returned by the ID verification provider"
+    },
+    "failure_reason": {
+      "type": "string",
+      "description": "Human-readable reason shown to the user when verification fails"
+    },
+    "linked_email": {
+      "type": "string",
+      "description": "Email captured during onboarding, used to reconcile this session with the user account created after login"
+    }
+  },
+  "required": [
+    "session_id",
+    "user_data",
+    "verification_mode"
+  ]
+}

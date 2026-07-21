@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import KycGate from '@/components/KycGate';
 
 const sportIcons = {
   soccer: '⚽',
@@ -118,6 +119,8 @@ export default function MyBets() {
       </div>
     );
   }
+
+  if (user && user.kyc_status !== 'approved') return <KycGate kycStatus={user.kyc_status} />;
 
   return (
     <div className="min-h-screen pb-24">

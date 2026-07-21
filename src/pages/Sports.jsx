@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import EventCard from '@/components/betting/EventCard';
 import BetSlip from '@/components/betting/BetSlip';
+import KycGate from '@/components/KycGate';
 
 const sports = [
   { id: 'all', name: 'Todos', icon: '🏆' },
@@ -260,6 +261,8 @@ export default function Sports() {
     acc[event.league].push(event);
     return acc;
   }, {});
+
+  if (user && user.kyc_status !== 'approved') return <KycGate kycStatus={user.kyc_status} />;
 
   return (
     <div className="min-h-screen pb-24">

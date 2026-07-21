@@ -8,6 +8,7 @@ import { Zap, Timer, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import EventCard from '@/components/betting/EventCard';
 import BetSlip from '@/components/betting/BetSlip';
+import KycGate from '@/components/KycGate';
 
 const sportIcons = {
   soccer: '⚽',
@@ -214,6 +215,8 @@ export default function LiveBetting() {
   const handlePlaceBet = async (betData) => {
     await placeBetMutation.mutateAsync(betData);
   };
+
+  if (user && user.kyc_status !== 'approved') return <KycGate kycStatus={user.kyc_status} />;
 
   return (
     <div className="min-h-screen pb-24">

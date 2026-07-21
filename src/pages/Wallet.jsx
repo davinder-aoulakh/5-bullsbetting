@@ -33,6 +33,7 @@ import {
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import KycGate from '@/components/KycGate';
 
 export default function Wallet() {
   const navigate = useNavigate();
@@ -182,6 +183,8 @@ export default function Wallet() {
       </div>
     );
   }
+
+  if (user && user.kyc_status !== 'approved') return <KycGate kycStatus={user.kyc_status} />;
 
   return (
     <div className="min-h-screen pb-24">

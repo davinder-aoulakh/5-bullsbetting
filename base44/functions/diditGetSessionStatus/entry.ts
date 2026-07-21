@@ -1,49 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-
-const STATUS_MAP = {
-  'not started': 'pending',
-  'in progress': 'in_progress',
-  'approved': 'approved',
-  'declined': 'declined',
-  'in review': 'in_review',
-  'abandoned': 'abandoned',
-  'expired': 'expired'
-};
-
-function buildFailureReason(decision) {
-  const failed = [];
-
-  const idv = decision?.kyc?.id_verification;
-  if (idv && idv.status && idv.status.toLowerCase() !== 'approved') {
-    if (idv.document_expired) {
-      failed.push('the identity document is expired');
-    } else {
-      failed.push('document authenticity check failed');
-    }
-  }
-
-  const liveness = decision?.kyc?.liveness;
-  if (liveness && liveness.passed === false) {
-    failed.push('liveness/selfie check failed');
-  }
-
-  const faceMatch = decision?.kyc?.face_match;
-  if (faceMatch && faceMatch.passed === false) {
-    failed.push('face match check failed');
-  }
-
-  const ageVerification = decision?.kyc?.age_verification;
-  if (ageVerification && ageVerification.passed === false) {
-    failed.push('age verification failed');
-  }
-
-  if (failed.length === 0) {
-    return 'Verification was declined. Please contact support for more information.';
-  }
-
-  const list = failed.join(', ');
-  return `Verification declined: ${list.charAt(0).toUpperCase() + list.slice(1)}.`;
-}
+import { mapStatus, buildFailureReason } from '../../shared/didit-helpers.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -76,10 +32,8 @@ Deno.serve(async (req) => {
     }
 
     const decision = await diditRes.json();
-    console.log('✅ [diditGetSessionStatus] Decision received:', JSON.stringify(decision));
-
-    const rawStatus = (decision?.status || '').toLowerCase();
-    const mappedStatus = STATUS_MAP[rawStatus] ?? 'pending';
+    const rawStatus = (decision?.status || '');
+    const mappedStatus = mapStatus(rawStatus);
 
     // Look up our VerificationSession record
     const base44 = createClientFromRequest(req);
@@ -87,16 +41,11 @@ Deno.serve(async (req) => {
     const session = sessions?.[0];
 
     if (session && session.status !== mappedStatus) {
-      const updatePayload = {
-        status: mappedStatus,
-        decision
-      };
-
+      const updatePayload: any = { status: mappedStatus, decision };
       if (mappedStatus === 'declined') {
         updatePayload.failure_reason = buildFailureReason(decision);
       }
-
-      console.log('📝 [diditGetSessionStatus] Updating session record:', session.id, updatePayload);
+      console.log('📝 [diditGetSessionStatus] Updating session record:', session.id);
       await base44.asServiceRole.entities.VerificationSession.update(session.id, updatePayload);
     }
 

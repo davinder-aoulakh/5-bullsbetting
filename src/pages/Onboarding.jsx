@@ -29,11 +29,9 @@ import NationalIDInput from '@/components/onboarding/NationalIDInput';
 import DocumentTypeSelector from '@/components/onboarding/DocumentTypeSelector';
 import IdentityConfirmation from '@/components/onboarding/IdentityConfirmation';
 import TermsAcceptance from '@/components/onboarding/TermsAcceptance';
-import DataCheckerVerification from '@/components/onboarding/DataCheckerVerification';
-import SDKVerification from '@/components/onboarding/SDKVerification';
 import ScopeVerification from '@/components/onboarding/ScopeVerification';
+import DiditVerification from '@/components/onboarding/DiditVerification';
 import { useLanguage } from '@/components/LanguageContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // 5-Bulls Logo SVG as inline component
 const BullsLogo = ({ className = "w-12 h-12" }) => (
@@ -96,8 +94,8 @@ export default function Onboarding() {
   const [kycPassed, setKycPassed] = useState(false);
   const [idvCompleted, setIdvCompleted] = useState(false);
   const [scopeCompleted, setScopeCompleted] = useState(false);
-  const [verificationTab, setVerificationTab] = useState('sdk'); // 'sdk' or 'link'
   const [isVerificationActive, setIsVerificationActive] = useState(false);
+  const [diditSessionId, setDiditSessionId] = useState(null);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -116,8 +114,14 @@ export default function Onboarding() {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('sdkSession');
     const linkSessionId = urlParams.get('verificationSession');
-    
-    if (sessionId) {
+    const diditSession = urlParams.get('diditSession');
+
+    if (diditSession) {
+      // User redirected back from Didit's hosted flow on mobile
+      console.log('📱 Didit session detected in URL:', diditSession);
+      setDiditSessionId(diditSession);
+      setCurrentStep(4);
+    } else if (sessionId) {
       // SDK session from QR code
       console.log('📱 SDK session detected in URL:', sessionId);
       setSdkSessionId(sessionId);
@@ -451,10 +455,10 @@ export default function Onboarding() {
   };
 
   const handleIDVComplete = async (result) => {
-    if (result.verified) {
+    if (result.verified === true && result.sessionId) {
       console.log('🎉 ID Verification complete! Moving to compliance check...');
+      setUserData(prev => ({ ...prev, didit_session_id: result.sessionId }));
       setIdvCompleted(true);
-      // Move to next step (Scope verification)
       setTimeout(() => {
         setCurrentStep(5);
       }, 1000);
@@ -744,39 +748,16 @@ export default function Onboarding() {
                       Identity Verification
                     </h2>
                     <p className="text-white/60">
-                      Choose your preferred verification method
+                      Complete your identity check to continue
                     </p>
                   </div>
 
-                  <Tabs value={verificationTab} onValueChange={setVerificationTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/5">
-                      <TabsTrigger value="sdk" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
-                        SDK Verification
-                      </TabsTrigger>
-                      <TabsTrigger value="link" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
-                        Link Verification
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="sdk" className="mt-0">
-                      <SDKVerification
-                        onComplete={handleIDVComplete}
-                        isMobile={isMobile}
-                        userData={userData}
-                        sessionId={sdkSessionId}
-                        onVerificationLoadingChange={setIsVerificationActive}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="link" className="mt-0">
-                      <DataCheckerVerification
-                        onComplete={handleIDVComplete}
-                        isMobile={isMobile}
-                        userData={userData}
-                        onVerificationLoadingChange={setIsVerificationActive}
-                      />
-                    </TabsContent>
-                  </Tabs>
+                  <DiditVerification
+                    onComplete={handleIDVComplete}
+                    isMobile={isMobile}
+                    userData={userData}
+                    onVerificationLoadingChange={setIsVerificationActive}
+                  />
                 </motion.div>
               )}
 

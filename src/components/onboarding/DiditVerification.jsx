@@ -35,11 +35,16 @@ export default function DiditVerification({ onComplete, userData, isMobile, onVe
   useEffect(() => {
     // Check if returning from Didit's hosted flow via callback URL
     const urlParams = new URLSearchParams(window.location.search);
-    const returnedSessionId = urlParams.get('diditSession');
+    const returnedSessionId = urlParams.get('verificationSessionId');
+    const returnedStatus = urlParams.get('status');
     if (returnedSessionId) {
-      console.log('🔙 [DiditVerification] Returning from Didit redirect, session:', returnedSessionId);
+      console.log('🔙 [DiditVerification] Returning from Didit redirect, session:', returnedSessionId, 'status hint:', returnedStatus);
       setSessionId(returnedSessionId);
-      setStatus('polling');
+      // Use Didit's status param as an immediate hint while the poll confirms
+      const hintMap = { approved: 'approved', declined: 'declined', in_review: 'in_review' };
+      const hintStatus = hintMap[returnedStatus] || 'polling';
+      setStatus(hintStatus);
+      // Always poll for the authoritative result
       startPolling(returnedSessionId);
     } else {
       createSession();
@@ -278,7 +283,15 @@ export default function DiditVerification({ onComplete, userData, isMobile, onVe
   }
 
   // ready / polling states — show the verification link UI
-  if (!verificationUrl) return null;
+  // When returning from a redirect we don't have a verificationUrl; show a loading state instead of blank
+  if (!verificationUrl) {
+    return (
+      <div className="text-center py-8">
+        <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
+        <p className="text-white font-medium">Checking your verification result…</p>
+      </div>
+    );
+  }
 
   // Desktop: QR code + continue link
   if (!isMobile) {

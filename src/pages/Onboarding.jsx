@@ -114,7 +114,7 @@ export default function Onboarding() {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('sdkSession');
     const linkSessionId = urlParams.get('verificationSession');
-    const diditSession = urlParams.get('diditSession');
+    const diditSession = urlParams.get('verificationSessionId');
 
     if (diditSession) {
       // User redirected back from Didit's hosted flow on mobile

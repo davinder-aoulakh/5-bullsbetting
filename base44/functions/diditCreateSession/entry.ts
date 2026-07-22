@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     }
 
     const origin = req.headers.get('origin') || 'https://app.base44.com';
-    const callbackUrl = `${origin}/Onboarding?diditSession={session_id}`;
+    const callbackUrl = `${origin}/Onboarding`;
 
     console.log('🚀 [diditCreateSession] Calling Didit API...');
 
@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
         workflow_id: workflowId,
         vendor_data: onboardingRef,
         callback: callbackUrl,
+        callback_method: 'both',
         metadata: { full_name: fullName, email, country }
       })
     });
